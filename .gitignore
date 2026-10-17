@@ -1,0 +1,35 @@
+# Secrets
+.env
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Local data
+backend/data/*.db
+backend/data/*.db-journal
+
+# Editors and OS
+.DS_Store
+.vscode/
+.idea/
+
+# Local tool state
+.sf/
+.claude/settings.local.json
+
+# Browser tool output
+.playwright-mcp/
+
+# Environment files: only the placeholder template is shared
+.env.*
+!.env.example
+*.bak
+*.bak-*
+
+# Local data and logs
+backend/data/
+*.log

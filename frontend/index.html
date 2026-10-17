@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A voice appointment assistant for a fictional dental clinic, told as a short story: ask, book, change, listen, and keep a ledger." />
+    <title>Voice Clinic Agent Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23111113'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css?v=3" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <p class="masthead-title">Voice Clinic Agent</p>
+        <nav class="chapters-nav" aria-label="Chapters">
+          <a href="#ask">Ask</a>
+          <a href="#book">Book</a>
+          <a href="#change">Change</a>
+          <a href="#listen">Listen</a>
+          <a href="#ledger">Ledger</a>
+        </nav>
+      </header>
+
+      <section class="opening" aria-labelledby="opening-title">
+        <p class="eyebrow">
+          <span id="clinic-name">Maple Street Dental (Fictional Demo)</span>
+          <span class="dot" aria-hidden="true"></span>
+          AI demo · fictional data only
+        </p>
+        <h1 id="opening-title" class="display">
+          Ana wants a cleaning. The assistant <em>takes it from there.</em>
+        </h1>
+        <p class="dek">
+          This page tells one story in five chapters. Every step is a real request to a real API.
+          The assistant can answer, check times, and prepare a booking. It never writes one until
+          the caller says yes.
+        </p>
+        <div class="status" id="status" role="status" hidden></div>
+      </section>
+
+      <article class="chapter reveal" id="ask" aria-labelledby="ask-title">
+        <header class="chapter-head">
+          <span class="numeral" aria-hidden="true">I</span>
+          <h2 id="ask-title">Ask</h2>
+        </header>
+        <div class="chapter-body">
+          <div class="narration">
+            <p class="lede">
+              Ana is curious about the weekend. She types the way people talk, and the assistant
+              answers from the clinic's own rules.
+            </p>
+            <p>
+              When a question is not covered, it says so. When the question is medical, it does not
+              guess. It hands the caller to a person.
+            </p>
+          </div>
+          <div class="panel">
+            <p class="panel-label">Try one of Ana's questions</p>
+            <div class="chips" id="chips"></div>
+            <form id="message-form" class="ask-form">
+              <label class="sr-only" for="message-input">Message</label>
+              <input
+                id="message-input"
+                name="message"
+                maxlength="500"
+                autocomplete="off"
+                placeholder="Type a question"
+                required
+              />
+              <button type="submit" class="pill">Send</button>
+            </form>
+            <div id="message-reply" class="reply" aria-live="polite"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="chapter reveal" id="book" aria-labelledby="book-title">
+        <header class="chapter-head">
+          <span class="numeral" aria-hidden="true">II</span>
+          <h2 id="book-title">Book</h2>
+        </header>
+        <div class="chapter-body">
+          <div class="narration">
+            <p class="lede">
+              Ana picks a cleaning and a day. The assistant shows only times that are really open,
+              then a preview of exactly what it will book.
+            </p>
+            <p>Nothing is written until she confirms the preview.</p>
+          </div>
+          <div class="panel">
+            <form id="book-form" class="stack" onsubmit="return false">
+              <label class="field">
+                <span>Patient name (fictional)</span>
+                <input id="book-name" name="patient_name" minlength="2" maxlength="80" required />
+              </label>
+              <div class="field-row">
+                <label class="field">
+                  <span>Appointment</span>
+                  <select id="book-type" name="appointment_type">
+                    <option value="cleaning">Cleaning · 30 min</option>
+                    <option value="checkup">Checkup · 30 min</option>
+                    <option value="consultation">Consultation · 60 min</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Date</span>
+                  <input id="book-date" name="date" type="date" required />
+                </label>
+              </div>
+              <div>
+                <button type="button" id="check-times" class="pill">Check open times</button>
+              </div>
+            </form>
+            <div id="slots" class="slots" aria-label="Open times"></div>
+            <div id="book-review" class="review" aria-live="polite"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="chapter reveal" id="change" aria-labelledby="change-title">
+        <header class="chapter-head">
+          <span class="numeral" aria-hidden="true">III</span>
+          <h2 id="change-title">Change</h2>
+        </header>
+        <div class="chapter-body">
+          <div class="narration">
+            <p class="lede">
+              Plans change. To find a booking you need its code and the name it was made under. A
+              code alone is not enough.
+            </p>
+            <p>
+              Changes inside 24 hours are passed to the front desk. The assistant does not make them
+              itself.
+            </p>
+          </div>
+          <div class="panel">
+            <form id="lookup-form" class="stack">
+              <div class="field-row">
+                <label class="field">
+                  <span>Confirmation code</span>
+                  <input id="manage-code" placeholder="MSD-XXXXXX" pattern="MSD-[A-Za-z0-9]{6}" required />
+                </label>
+                <label class="field">
+                  <span>Patient name</span>
+                  <input id="manage-name" minlength="2" maxlength="80" required />
+                </label>
+              </div>
+              <div>
+                <button type="submit" class="pill">Find booking</button>
+              </div>
+            </form>
+            <div id="booking-details" class="review" aria-live="polite"></div>
+            <div id="manage-actions" class="stack" hidden>
+              <div class="field-row">
+                <label class="field">
+                  <span>New date</span>
+                  <input id="new-date" type="date" />
+                </label>
+                <label class="field">
+                  <span>New start time</span>
+                  <input id="new-time" placeholder="14:00" pattern="([01]\d|2[0-3]):[0-5]\d" />
+                </label>
+              </div>
+              <div class="row">
+                <button type="button" id="reschedule-button" class="pill">Reschedule</button>
+                <button type="button" id="cancel-button" class="pill ghost-danger">Cancel appointment</button>
+              </div>
+            </div>
+            <div id="manage-review" class="review" aria-live="polite"></div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="interlude reveal" aria-labelledby="twist-title">
+        <p class="interlude-kicker">A plot twist</p>
+        <h2 id="twist-title">When the question is medical, the story changes.</h2>
+        <p>
+          The assistant will not diagnose, advise on medicine, or guess at urgency. Emergency wording
+          gets a 911 prompt first. Everything else goes to a person, with the front desk number.
+        </p>
+        <button type="button" id="human-button" class="pill">Talk to a person</button>
+      </aside>
+
+      <article class="chapter reveal" id="listen" aria-labelledby="listen-title">
+        <header class="chapter-head">
+          <span class="numeral" aria-hidden="true">IV</span>
+          <h2 id="listen-title">Listen</h2>
+        </header>
+        <div class="chapter-body">
+          <div class="narration">
+            <p class="lede">
+              The same rules, spoken aloud. A voice agent calls the same endpoints, and reads each
+              preview back before it acts.
+            </p>
+            <p>
+              Voice is optional. Without it, everything in this story still works from the text and
+              forms above.
+            </p>
+          </div>
+          <div class="panel voice-panel">
+            <div id="voice-area">
+              <p class="hint">Checking voice configuration…</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="chapter reveal" id="ledger" aria-labelledby="ledger-title">
+        <header class="chapter-head">
+          <span class="numeral" aria-hidden="true">V</span>
+          <h2 id="ledger-title">Ledger</h2>
+        </header>
+        <div class="chapter-body">
+          <div class="narration">
+            <p class="lede">
+              Every action leaves one line behind: what happened, and which record it touched.
+            </p>
+            <p>There are no names, no codes, and no transcripts in the ledger.</p>
+            <button type="button" id="refresh-log" class="pill secondary">Refresh ledger</button>
+          </div>
+          <div class="panel">
+            <ol id="log" class="ledger"></ol>
+          </div>
+        </div>
+      </article>
+
+      <footer class="colophon">
+        <p>
+          A portfolio project. The clinic, the names, and the 555-01xx phone numbers are invented.
+          Nothing here is medical advice, and no real patient data is used.
+        </p>
+      </footer>
+    </div>
+
+    <script src="app.js?v=3" type="module"></script>
+  </body>
+</html>

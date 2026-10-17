@@ -1,0 +1,94 @@
+{
+  "clinic": "Maple Street Dental (Fictional Demo)",
+  "note": "Every fact here is invented for a demo. Verify nothing against a real business.",
+  "entries": [
+    {
+      "topic": "hours",
+      "keywords": [
+        "hours",
+        "opening",
+        "closing",
+        "what time do you",
+        "are you open"
+      ],
+      "answer": "Monday to Friday 9:00 AM to 5:00 PM, Saturday 9:00 AM to 1:00 PM, and closed on Sunday."
+    },
+    {
+      "topic": "location",
+      "keywords": [
+        "address",
+        "location",
+        "where are you",
+        "directions",
+        "parking"
+      ],
+      "answer": "We are at 100 Example Lane, Demo City (fictional). There is free parking in the lot behind the building."
+    },
+    {
+      "topic": "cancellation_policy",
+      "keywords": [
+        "cancellation policy",
+        "cancellation",
+        "notice",
+        "late cancel",
+        "reschedule policy"
+      ],
+      "answer": "Please give at least 24 hours' notice to cancel or reschedule. Inside that window the change cannot be made here, and this demo records the request for the clinic."
+    },
+    {
+      "topic": "new_patients",
+      "keywords": [
+        "new patient",
+        "first visit",
+        "first time",
+        "paperwork",
+        "forms"
+      ],
+      "answer": "Please arrive 10 minutes early. Bring photo ID and your insurance card if you have one. Forms can be completed when you arrive."
+    },
+    {
+      "topic": "insurance_and_billing",
+      "keywords": [
+        "insurance",
+        "coverage",
+        "covered",
+        "billing",
+        "payment",
+        "pay for"
+      ],
+      "answer": "This demo does not verify insurance or take payments. For billing questions, this demo records your question for the clinic."
+    },
+    {
+      "topic": "services",
+      "keywords": [
+        "services",
+        "what do you offer",
+        "do you do",
+        "treatments"
+      ],
+      "answer": "The demo offers three appointment types: a cleaning (30 min), a checkup (30 min), and a consultation (60 min). Questions about specific treatments are recorded for a clinic team member."
+    },
+    {
+      "topic": "about_this_demo",
+      "keywords": [
+        "fictional",
+        "demo",
+        "is this real",
+        "are you a robot",
+        "are you ai",
+        "real patient"
+      ],
+      "answer": "This is an AI demo for a fictional clinic. It uses invented data only and does not store real patient information."
+    },
+    {
+      "topic": "front_desk_contact",
+      "keywords": [
+        "phone number",
+        "front desk",
+        "contact",
+        "email"
+      ],
+      "answer": "The fictional front desk number is 555-0100. It is not a live line in this demo."
+    }
+  ]
+}

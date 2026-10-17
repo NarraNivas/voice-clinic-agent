@@ -1,0 +1,27 @@
+[project]
+name = "voice-clinic-agent-backend"
+version = "0.1.0"
+description = "Fictional dental clinic appointment API for a voice agent demo"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+# Correctness, imports, pyupgrade, simplification, returns, pylint, pytest style, comprehensions.
+select = ["E", "F", "I", "B", "UP", "SIM", "RET", "PL", "C4", "PT", "RUF"]
+ignore = [
+    "B008",     # FastAPI's Depends() in parameter defaults is the standard pattern.
+    "PLR2004",  # Magic values: HTTP codes and clinic hours are the point of these tests and rules.
+    "PLR0911",  # Many returns: parsing functions are clearer as a sequence of early returns.
+    "PLR0912",  # Many branches: same reason.
+    "PLR0913",  # Many arguments: FastAPI handlers and dataclass-like constructors.
+    "PLR0915",  # Many statements: same reason.
+    "RUF001", "RUF002", "RUF003",  # Typographic characters in user-facing copy are intentional.
+]

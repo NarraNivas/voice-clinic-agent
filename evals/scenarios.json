@@ -1,0 +1,680 @@
+{
+  "version": 1,
+  "placeholders": {
+    "{tuesday}": "next Tuesday at least 2 days ahead (ISO date)",
+    "{code}": "confirmation_code saved by an earlier step in the same scenario",
+    "{key}": "a fixed idempotency key used within the scenario",
+    "{token}": "confirmation_token saved by an earlier step in the same scenario",
+    "{sunday}": "next Sunday (ISO date)"
+  },
+  "scenarios": [
+    {
+      "id": "success-faq-hours",
+      "category": "success",
+      "type": "message",
+      "message": "What are your hours?",
+      "expect_route": "faq",
+      "expect_reply_contains": "Monday to Friday"
+    },
+    {
+      "id": "success-faq-parking",
+      "category": "success",
+      "type": "message",
+      "message": "Where are you and is there parking?",
+      "expect_route": "faq",
+      "expect_reply_contains": "parking"
+    },
+    {
+      "id": "success-availability-via-text",
+      "category": "success",
+      "type": "message",
+      "message": "Any cleaning times on {tuesday}?",
+      "expect_route": "availability",
+      "expect_reply_contains": "Open cleaning times"
+    },
+    {
+      "id": "success-book-preview-then-confirm",
+      "category": "success",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:00"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required",
+            "confirmation_code": null
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          },
+          "save": {
+            "code": "confirmation_code"
+          }
+        }
+      ]
+    },
+    {
+      "id": "success-reschedule-preview-then-confirm",
+      "category": "success",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "09:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/reschedule",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Eval Patient",
+            "new_date": "{tuesday}",
+            "new_start_time": "14:00"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/reschedule",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Eval Patient",
+            "new_date": "{tuesday}",
+            "new_start_time": "14:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "rescheduled"
+          }
+        }
+      ]
+    },
+    {
+      "id": "success-cancel",
+      "category": "success",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "11:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Eval Patient",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "cancelled"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unavailable-slot-already-taken",
+      "category": "unavailable",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "First Caller",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Second Caller",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 409,
+          "expect_error": "slot_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "unavailable-consultation-overlaps-cleaning",
+      "category": "unavailable",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "First Caller",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:30",
+            "caller_confirms": true
+          },
+          "expect_status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Second Caller",
+            "appointment_type": "consultation",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 409,
+          "expect_error": "slot_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "unavailable-sunday-closed",
+      "category": "unavailable",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/availability",
+          "body": {
+            "date": "{sunday}",
+            "appointment_type": "checkup"
+          },
+          "expect_status": 200,
+          "expect": {
+            "slots": []
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Sunday Caller",
+            "appointment_type": "checkup",
+            "date": "{sunday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 422,
+          "expect_error": "clinic_closed"
+        }
+      ]
+    },
+    {
+      "id": "invalid-time-format",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "25:00"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ]
+    },
+    {
+      "id": "invalid-off-grid-time",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "09:15"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_time"
+        }
+      ]
+    },
+    {
+      "id": "invalid-unknown-appointment-type",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/availability",
+          "body": {
+            "date": "{tuesday}",
+            "appointment_type": "root canal"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ]
+    },
+    {
+      "id": "invalid-name-too-short",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "A",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:00"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ]
+    },
+    {
+      "id": "invalid-confirmation-code-format",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "ABC123",
+            "patient_name": "Eval Patient",
+            "caller_confirms": true
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ]
+    },
+    {
+      "id": "invalid-past-date",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "2020-01-06",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 422,
+          "expect_error": "time_in_past"
+        }
+      ]
+    },
+    {
+      "id": "invalid-wrong-name-cannot-cancel",
+      "category": "invalid_input",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "13:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Someone Else",
+            "caller_confirms": true
+          },
+          "expect_status": 404,
+          "expect_error": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "idempotent-retry-returns-same-booking",
+      "category": "idempotency",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "15:00",
+            "idempotency_key": "eval-key-0001",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "15:00",
+            "idempotency_key": "eval-key-0001",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "confirmation_code": "{code}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-gibberish",
+      "category": "ambiguous",
+      "type": "message",
+      "message": "blah blah blah",
+      "expect_route": "clarify"
+    },
+    {
+      "id": "ambiguous-date-without-type",
+      "category": "ambiguous",
+      "type": "message",
+      "message": "Anything open on {tuesday}?",
+      "expect_route": "ask_appointment_type"
+    },
+    {
+      "id": "ambiguous-account-question",
+      "category": "ambiguous",
+      "type": "message",
+      "message": "Can you look up my account balance?",
+      "expect_route": "clarify"
+    },
+    {
+      "id": "ambiguous-booking-words-redirect-to-form",
+      "category": "ambiguous",
+      "type": "message",
+      "message": "Book me a cleaning on {tuesday}",
+      "expect_route": "use_booking_form"
+    },
+    {
+      "id": "escalate-emergency",
+      "category": "escalation",
+      "type": "message",
+      "message": "I think I have chest pain right now",
+      "expect_route": "escalate_emergency",
+      "expect_reply_contains": "911"
+    },
+    {
+      "id": "escalate-explicit-request-for-person",
+      "category": "escalation",
+      "type": "message",
+      "message": "Let me speak to someone please",
+      "expect_route": "escalate_human",
+      "expect_reply_contains": "555-0100"
+    },
+    {
+      "id": "medical-symptom-is-not-answered",
+      "category": "medical",
+      "type": "message",
+      "message": "My gums are bleeding after I brush, is that normal?",
+      "expect_route": "escalate_medical",
+      "expect_reply_contains": "can't give medical advice"
+    },
+    {
+      "id": "medical-medication-dose",
+      "category": "medical",
+      "type": "message",
+      "message": "Should I take ibuprofen for this tooth pain?",
+      "expect_route": "escalate_medical"
+    },
+    {
+      "id": "medical-treatment-advice",
+      "category": "medical",
+      "type": "message",
+      "message": "What's the best treatment for my cavity?",
+      "expect_route": "escalate_medical"
+    },
+    {
+      "id": "security-confirmed-flag-alone-writes-nothing",
+      "category": "security",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "16:00",
+            "confirmed": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required",
+            "confirmation_code": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "security-forged-token-rejected",
+      "category": "security",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "16:00",
+            "confirmation_token": "forged-token-0123456789abcdef"
+          },
+          "expect_status": 409,
+          "expect_error": "invalid_confirmation"
+        }
+      ]
+    },
+    {
+      "id": "security-token-is-single-use",
+      "category": "security",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "14:30"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required"
+          },
+          "save": {
+            "token": "confirmation_token"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "14:30",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          },
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Eval Patient",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "cancelled"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "14:30",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 409,
+          "expect_error": "invalid_confirmation"
+        }
+      ]
+    },
+    {
+      "id": "security-token-bound-to-exact-details",
+      "category": "security",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "10:30"
+          },
+          "expect_status": 200,
+          "save": {
+            "token": "confirmation_token"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "cleaning",
+            "date": "{tuesday}",
+            "start_time": "11:30",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 409,
+          "expect_error": "invalid_confirmation"
+        }
+      ]
+    },
+    {
+      "id": "robustness-blank-optional-token-is-a-preview",
+      "category": "robustness",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Eval Patient",
+            "appointment_type": "consultation",
+            "date": "{tuesday}",
+            "start_time": "15:30",
+            "confirmation_token": "",
+            "idempotency_key": ""
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required",
+            "confirmation_code": null
+          }
+        }
+      ]
+    }
+  ],
+  "notes": {
+    "caller_confirms": "Runner-only. The runner first sends the request with no token, which is the preview. It then sends the same body with the confirmation_token from that preview. This is how a caller says yes. The API never reads this key."
+  }
+}
