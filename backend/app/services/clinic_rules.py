@@ -1,10 +1,14 @@
 """Fictional clinic constants and the pure slot calculator.
 
 Everything here is invented: the clinic, its hours, and the 555-01xx phone range,
-which is reserved for fictional use. Times are clinic-local with no timezone handling.
+which is reserved for fictional use. Times are clinic-local. `clinic_now` applies the clinic's
+timezone once, and the rest of the code works with naive clinic-local datetimes.
 """
 
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
+
+from app.config import DEFAULT_TIMEZONE
 
 CLINIC_NAME = "Maple Street Dental (Fictional Demo)"
 CLINIC_ADDRESS = "100 Example Lane, Demo City (fictional)"
@@ -66,3 +70,12 @@ def overlaps(start: datetime, end: datetime, booked: list[tuple[datetime, dateti
 def describe(moment: datetime) -> str:
     """Human-readable date and time for summaries, e.g. 'Tuesday, October 20, 2026 at 09:30 AM'."""
     return f"{moment:%A, %B} {moment.day}, {moment:%Y} at {moment:%I:%M %p}"
+
+
+def clinic_now(timezone: str = DEFAULT_TIMEZONE) -> datetime:
+    """The current wall-clock time in the clinic's timezone, as a naive minute-precision value.
+
+    The rest of the code compares naive clinic-local datetimes, so this is the one place where
+    the timezone is applied.
+    """
+    return datetime.now(ZoneInfo(timezone)).replace(second=0, microsecond=0, tzinfo=None)

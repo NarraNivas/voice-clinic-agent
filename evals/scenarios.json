@@ -611,7 +611,7 @@
             "confirmation_token": "{token}"
           },
           "expect_status": 409,
-          "expect_error": "invalid_confirmation"
+          "expect_error": "outcome_superseded"
         }
       ]
     },

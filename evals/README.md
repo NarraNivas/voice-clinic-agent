@@ -37,7 +37,7 @@ pytest tests/test_evals.py -v
 Measured on 2026-10-17 (macOS 26.3, Python 3.12.5, pytest 9.1.1), one run:
 
 - `tests/test_evals.py`: 31 passed, 0 failed.
-- Whole backend suite: 193 passed, 0 failed (162 unit and API tests plus 31 evals).
+- Whole backend suite: 244 passed, 0 failed (213 unit and API tests plus 31 evals).
 
 These scenarios run against the app in-process. Results from the live voice agent are recorded separately in [docs/live-testing.md](../docs/live-testing.md), including the calls that failed.
 

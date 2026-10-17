@@ -1,7 +1,8 @@
 """FastAPI dependencies: settings, one SQLite connection per request, and services."""
 
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from datetime import datetime
 
 from fastapi import Depends, Request
 
@@ -24,8 +25,16 @@ def get_conn(settings: Settings = Depends(get_settings)) -> Iterator[sqlite3.Con
         conn.close()
 
 
-def get_demo_service(conn: sqlite3.Connection = Depends(get_conn)) -> AppointmentService:
-    return AppointmentService(AppointmentRepository(conn), channel="demo")
+def get_clock(request: Request) -> Callable[[], datetime]:
+    clock: Callable[[], datetime] = request.app.state.clock
+    return clock
+
+
+def get_demo_service(
+    conn: sqlite3.Connection = Depends(get_conn),
+    clock: Callable[[], datetime] = Depends(get_clock),
+) -> AppointmentService:
+    return AppointmentService(AppointmentRepository(conn), channel="demo", clock=clock)
 
 
 def get_repo(conn: sqlite3.Connection = Depends(get_conn)) -> AppointmentRepository:

@@ -2,11 +2,12 @@
 Keep the server bound to 127.0.0.1. ElevenLabs uses the /tools routes instead."""
 
 import sqlite3
+from collections.abc import Callable
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
 
-from app.api.deps import get_conn, get_demo_service, get_repo, get_settings
+from app.api.deps import get_clock, get_conn, get_demo_service, get_repo, get_settings
 from app.config import Settings
 from app.models import schemas
 from app.repositories import log
@@ -18,10 +19,6 @@ from app.services.escalation import escalate
 from app.services.faq import match_faq
 
 router = APIRouter()
-
-
-def _now() -> datetime:
-    return datetime.now().replace(second=0, microsecond=0)
 
 
 @router.get("/health")
@@ -106,8 +103,9 @@ def faq(req: schemas.FaqRequest) -> schemas.FaqResponse:
 def assistant_message(
     req: schemas.MessageRequest,
     repo: AppointmentRepository = Depends(get_repo),
+    clock: Callable[[], datetime] = Depends(get_clock),
 ) -> schemas.MessageResponse:
-    result = route_message(req.message, repo=repo, clock=_now)
+    result = route_message(req.message, repo=repo, clock=clock)
     return schemas.MessageResponse(route=result.route, reply=result.reply, data=result.data)
 
 
@@ -115,12 +113,14 @@ def assistant_message(
 def create_escalation(
     req: schemas.EscalationRequest,
     conn: sqlite3.Connection = Depends(get_conn),
+    clock: Callable[[], datetime] = Depends(get_clock),
 ) -> schemas.EscalationResponse:
-    escalation_id, message = escalate(conn, reason=req.reason, channel="demo", clock=_now)
+    result = escalate(conn, reason=req.reason, channel="demo", clock=clock)
     return schemas.EscalationResponse(
-        escalation_id=escalation_id,
-        message=message,
+        escalation_id=result.escalation_id,
+        message=result.message,
         front_desk_phone=rules.FRONT_DESK_PHONE,
+        delivery_state=result.delivery_state,
     )
 
 

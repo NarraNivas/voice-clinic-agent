@@ -127,8 +127,9 @@ def test_token_cannot_be_reused(service, conn):
     assert booked.status == "booked"
     # Free the slot so the reuse reaches the token check rather than the slot check.
     cancel_confirmed(service, booked.confirmation_code)
+    # The booking has changed since, so the recorded "booked" outcome no longer describes it.
     expect_error(
-        "invalid_confirmation",
+        "outcome_superseded",
         service.book,
         booking(confirmation_token=preview.confirmation_token),
     )

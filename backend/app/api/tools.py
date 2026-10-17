@@ -6,11 +6,12 @@ Tool results are plain JSON so the agent can read them back to the caller.
 
 import hmac
 import sqlite3
+from collections.abc import Callable
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Header
 
-from app.api.deps import get_conn, get_settings
+from app.api.deps import get_clock, get_conn, get_settings
 from app.config import Settings
 from app.models import schemas
 from app.repositories.appointments import AppointmentRepository
@@ -41,12 +42,11 @@ def require_tool_secret(
         raise ApiError("unauthorized", "Missing or invalid tool secret.", status_code=401)
 
 
-def get_tool_service(conn: sqlite3.Connection = Depends(get_conn)) -> AppointmentService:
-    return AppointmentService(AppointmentRepository(conn), channel=CHANNEL)
-
-
-def _now() -> datetime:
-    return datetime.now().replace(second=0, microsecond=0)
+def get_tool_service(
+    conn: sqlite3.Connection = Depends(get_conn),
+    clock: Callable[[], datetime] = Depends(get_clock),
+) -> AppointmentService:
+    return AppointmentService(AppointmentRepository(conn), channel=CHANNEL, clock=clock)
 
 
 @router.post(
@@ -134,10 +134,12 @@ def answer_faq(req: schemas.FaqRequest) -> schemas.FaqResponse:
 def escalate_to_human(
     req: schemas.EscalationRequest,
     conn: sqlite3.Connection = Depends(get_conn),
+    clock: Callable[[], datetime] = Depends(get_clock),
 ) -> schemas.EscalationResponse:
-    escalation_id, message = escalate(conn, reason=req.reason, channel=CHANNEL, clock=_now)
+    result = escalate(conn, reason=req.reason, channel=CHANNEL, clock=clock)
     return schemas.EscalationResponse(
-        escalation_id=escalation_id,
-        message=message,
+        escalation_id=result.escalation_id,
+        message=result.message,
         front_desk_phone=rules.FRONT_DESK_PHONE,
+        delivery_state=result.delivery_state,
     )

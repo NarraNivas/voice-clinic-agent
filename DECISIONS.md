@@ -55,3 +55,20 @@ Each entry records a choice, the alternatives, and the tradeoff.
 - The activity log and the escalation table store outcomes, tool names, and numeric appointment ids (`appointment #12`). They never store patient names, confirmation codes, or caller free text.
 - Escalations are recorded by reason only (`emergency`, `medical`, `human_request`, and so on). The escalation endpoint does not accept free text.
 - Tradeoff: the front desk cannot see what the caller said in the log. That is intended. The reason and the appointment id are enough to find the booking.
+
+## D15. Previews are bound to the appointment revision
+- Every change to an appointment bumps its revision. A preview records the revision the caller reviewed, and the confirm step checks it again inside the transaction. A cancellation preview taken before a reschedule therefore cannot cancel the rescheduled booking.
+- Tradeoff: a second, legitimate change made by someone else makes the first preview stale, and the caller has to review again. That is the intended behavior.
+
+## D16. Confirmed tokens keep their outcome
+- A confirmed token stores what it did. Sending the same token again returns that outcome without writing, as long as the booking still matches the outcome. Otherwise the caller gets `outcome_superseded`.
+- This is what makes a lost reply recoverable on the voice path, provided the agent sends the same token back.
+
+## D17. Staff handoffs go through a transactional outbox
+- An escalation writes the staff request and its queued handoff in one transaction. A worker delivers it to the CRM sandbox over HTTP.
+- Retries are bounded and use exponential backoff. A conflicting duplicate is not retried. The caller is told "queued", not "delivered", until the CRM accepts it.
+- The CRM sandbox is a simulator with its own database. It is not an integration with a real CRM, and the docs say so.
+
+## D18. Schema changes are versioned migrations
+- Migrations run in order and are recorded in `schema_migrations`. Before the first upgrade of an existing file, the file is copied to a `.before-vN.bak` sibling. Upgrades are additive, except for removing a free-text column from escalations, which the backup covers.
+

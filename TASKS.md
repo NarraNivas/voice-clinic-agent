@@ -62,3 +62,16 @@
 - [ ] A full spoken booking after the fixes (needs a person on the call)
 - [ ] Permanent public URL (needs an account choice)
 
+
+## Milestone J (A, then C): correctness and a local CRM handoff
+- [x] A1 canonical times stay canonical (`03:30` is 03:30)
+- [x] A2 ambiguous or contradictory time text is rejected, with a clear validation message
+- [x] A3 change tokens bind to the appointment revision, checked again inside the transaction
+- [x] A4 a lost confirm reply is answered with the recorded outcome; no second write
+- [x] A5 explicit clinic timezone; injectable clock per app
+- [x] A6 versioned SQLite migrations (additive, with a backup before upgrading an existing file)
+- [x] C1 local CRM sandbox: idempotent `PUT /cases/{request_id}` over localhost HTTP
+- [x] C2 outbox written in the same transaction as the staff request
+- [x] C3 worker: bounded retries, backoff on a fake clock, delivery states
+- [x] C4 fault injection: temporary 503 and a response lost after commit
+- [x] C5 acceptance journey runs end to end with one command, and recovery creates exactly one case

@@ -174,3 +174,5 @@ class EscalationResponse(BaseModel):
     escalation_id: int
     message: str
     front_desk_phone: str
+    # "queued" until the simulated CRM accepts the handoff. Never "delivered" before that.
+    delivery_state: str = "queued"

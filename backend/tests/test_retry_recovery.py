@@ -114,7 +114,7 @@ def test_a_lost_cancel_reply_can_be_recovered_by_reading_the_booking(client):
         "/api/appointments/lookup", json={"confirmation_code": code, "patient_name": "Retry Caller"}
     ).json()
     assert found["status"] == "cancelled"
-    # Resending the same token is refused, so no second write can happen.
+    # Resending the same token returns the recorded outcome. Nothing is written a second time.
     again = client.post(
         "/api/appointments/cancel",
         json={
@@ -123,7 +123,8 @@ def test_a_lost_cancel_reply_can_be_recovered_by_reading_the_booking(client):
             "confirmation_token": token,
         },
     )
-    assert again.status_code == 409
+    assert again.status_code == 200
+    assert again.json()["status"] == "cancelled"
 
 
 def test_a_lost_reschedule_reply_is_recovered_by_reading_the_booking(client):
@@ -146,4 +147,6 @@ def test_a_lost_reschedule_reply_is_recovered_by_reading_the_booking(client):
     ).json()
     assert found["starts_at"] == f"{base['new_date']}T14:00"
     again = client.post("/api/appointments/reschedule", json={**base, "confirmation_token": token})
-    assert again.status_code == 409
+    assert again.status_code == 200
+    assert again.json()["status"] == "rescheduled"
+    assert again.json()["appointment"]["starts_at"] == f"{base['new_date']}T14:00"

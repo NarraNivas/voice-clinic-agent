@@ -14,6 +14,7 @@ class Appointment:
     duration_minutes: int
     status: str
     idempotency_key: str | None
+    revision: int = 0
 
     @property
     def ends_at(self) -> datetime:

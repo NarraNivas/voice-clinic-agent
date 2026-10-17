@@ -84,9 +84,20 @@ cd backend
 .venv/bin/ruff format --check . ../scripts --config pyproject.toml
 ```
 
-Last run: 193 tests passed. 162 of them are unit and API tests. The other 31 are scenarios in [`evals/scenarios.json`](evals/scenarios.json), which run realistic conversations against the real app. How I wrote them is in [`evals/README.md`](evals/README.md).
+Last run: 244 tests passed. 213 of them are unit and API tests, including the recovery journey over real localhost HTTP. The other 31 are scenarios in [`evals/scenarios.json`](evals/scenarios.json), which run realistic conversations against the real app. How I wrote them is in [`evals/README.md`](evals/README.md).
 
 There's one more check that isn't in pytest. [`scripts/live_check.py`](scripts/live_check.py) sends the same requests the agent sends, through a public URL, and then cleans up. It passed 12 of 12 on the last run. It only works while the tunnel is up.
+
+## The offline recovery journey
+
+This part needs no ElevenLabs account, no key, and no internet connection. It starts two real services on free localhost ports: the clinic demo and a local CRM sandbox. The sandbox is a simulator with its own database. It is not Salesforce and not a real CRM.
+
+```bash
+cd backend
+.venv/bin/python -m crm_sandbox.journey
+```
+
+It books an appointment, asks for a late cancellation, and gets it queued for the clinic. It makes the sandbox fail twice, then lose one response after saving. The worker retries on a fake clock until the handoff is delivered once. It uses temporary databases and removes them afterwards, so your demo data is untouched.
 
 ## Where it stands
 
@@ -97,7 +108,7 @@ There's one more check that isn't in pytest. [`scripts/live_check.py`](scripts/l
 
 ## What I'd still change
 
-- **Lost replies on the voice path.** The browser can recover a lost confirmation because it keeps a request key. The voice path has no key. If the confirm reply gets lost, the agent can't tell whether the booking went through. The fix is probably to have the agent keep the confirmation code from the preview.
+- **Lost replies on the voice path depend on the agent sending the token back.** The server now answers a repeated confirm with the outcome it already recorded, and writes nothing. That is tested through the HTTP tool route. Whether the connected agent resends the token after a lost reply has not been checked on a live call.
 - **Finding a booking without the code.** Right now you need the code and the name. That's deliberate, since a name alone would let anyone look up anyone's booking. It's still annoying when someone has lost the code.
 - **Hosting.** The tools run through a temporary tunnel, and the URL changes every time it restarts.
 - **Real use.** I've only tested this with scripted and staged calls. I haven't had a real caller use it for a whole conversation.

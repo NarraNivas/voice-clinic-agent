@@ -55,8 +55,8 @@ def route_message(
     # Safety first: emergency and medical wording is never answered by the assistant.
     verdict = safety.screen(lowered)
     if verdict.kind in ESCALATION_ROUTES:
-        _, reply = escalate(repo.conn, reason=verdict.kind, channel=CHANNEL, clock=clock)
-        return RouteResult(ESCALATION_ROUTES[verdict.kind], reply)
+        result = escalate(repo.conn, reason=verdict.kind, channel=CHANNEL, clock=clock)
+        return RouteResult(ESCALATION_ROUTES[verdict.kind], result.message)
 
     # Chat text never makes a change. Point the caller to the preview-then-confirm form instead.
     if CHANGE_INTENT.search(lowered):

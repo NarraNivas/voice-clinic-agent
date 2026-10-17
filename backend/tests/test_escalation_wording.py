@@ -36,7 +36,7 @@ def test_every_message_says_the_demo_records_or_no_one_is_notified(reason):
 def test_emergency_message_gives_direct_guidance():
     text = REASON_MESSAGES["emergency"]
     assert "911" in text
-    assert "contacts no one" in text or "does not contact" in text.lower()
+    assert "No staff member is notified" in text
 
 
 def test_medical_message_does_not_give_advice():

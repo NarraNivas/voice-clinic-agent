@@ -1,9 +1,13 @@
 """Availability, booking, rescheduling, and cancellation rules.
 
 Writes are two-step. The first call, with no confirmation_token, returns a preview and a
-single-use token bound to the exact operation and details. The second call sends that token back.
-The token is checked and marked used inside the same transaction as the write, so a failed check
-rolls back both. A boolean flag in the request cannot write anything on its own.
+single-use token bound to the operation, the details, and the appointment revision the caller
+reviewed. The second call sends that token back. The token is checked, and marked used, inside the
+same transaction as the write, so a failed check rolls back both.
+
+A confirmed token keeps its outcome. If the same token is sent again, the stored outcome is
+returned without writing, as long as the booking is still in the state that outcome describes.
+Otherwise the caller gets an `outcome_superseded` conflict.
 
 Logs record outcomes and numeric appointment ids only: no patient names and no confirmation codes.
 """
@@ -11,6 +15,7 @@ Logs record outcomes and numeric appointment ids only: no patient names and no c
 import secrets
 from collections.abc import Callable
 from datetime import date, datetime, time, timedelta
+from typing import Any
 
 from app.models.domain import Appointment
 from app.models.schemas import (
@@ -27,13 +32,14 @@ from app.repositories.appointments import AppointmentRepository
 from app.services import clinic_rules as rules
 from app.services import confirmations
 from app.services.errors import ApiError
+from app.services.escalation import escalate
 
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I, to avoid misreading
 Clock = Callable[[], datetime]
 
 
-def _now() -> datetime:
-    return datetime.now().replace(second=0, microsecond=0)
+def _default_clock() -> datetime:
+    return rules.clinic_now()
 
 
 class AppointmentService:
@@ -42,7 +48,7 @@ class AppointmentService:
         repo: AppointmentRepository,
         *,
         channel: str = "demo",
-        clock: Clock = _now,
+        clock: Clock = _default_clock,
     ) -> None:
         self.repo = repo
         self.channel = channel
@@ -100,8 +106,6 @@ class AppointmentService:
         duration = rules.APPOINTMENT_DURATIONS[req.appointment_type]
         starts_at = _combine(req.date, req.start_time)
         now = self.clock()
-        self._check_slot(starts_at, duration, now, ignore_id=None)
-
         details = {
             "name": _normalize(req.patient_name),
             "type": req.appointment_type,
@@ -111,7 +115,8 @@ class AppointmentService:
         fingerprint = confirmations.digest("book", details)
 
         if req.confirmation_token is None:
-            token = self._issue_token("book", fingerprint)
+            self._check_slot(starts_at, duration, now, ignore_id=None)
+            token = self._issue_token("book", fingerprint, revision=0)
             self._log("book_appointment", "preview", f"{req.appointment_type} preview")
             return ChangeResult(
                 status="confirmation_required",
@@ -122,14 +127,26 @@ class AppointmentService:
                 confirmation_token=token,
             )
 
+        recorded = confirmations.stored_outcome(
+            self.repo.conn,
+            token=req.confirmation_token,
+            operation="book",
+            details_digest=fingerprint,
+        )
+        if recorded is not None:
+            return self._replay(recorded)
+
         with self.repo.write_transaction():
-            confirmations.consume(
+            replay = confirmations.consume(
                 self.repo.conn,
                 token=req.confirmation_token,
                 operation="book",
                 details_digest=fingerprint,
+                current_revision=0,
                 now=now,
             )
+            if replay is not None:
+                return self._replay(replay)
             # Re-check inside the transaction: another request may have taken the slot.
             self._check_slot(starts_at, duration, now, ignore_id=None)
             appointment = self.repo.insert(
@@ -141,8 +158,14 @@ class AppointmentService:
                 idempotency_key=req.idempotency_key,
                 now=now,
             )
+            result = self._booked_result(appointment, already_done=False)
+            confirmations.record_outcome(
+                self.repo.conn,
+                token=req.confirmation_token,
+                outcome=_outcome(result, appointment),
+            )
         self._log("book_appointment", "booked", f"appointment #{appointment.id}")
-        return self._booked_result(appointment, already_done=False)
+        return result
 
     # --- lookup, reschedule, cancel ----------------------------------------
 
@@ -153,21 +176,18 @@ class AppointmentService:
 
     def reschedule(self, req: RescheduleRequest) -> ChangeResult:
         appointment = self._find(req.confirmation_code, req.patient_name)
-        if appointment.status != "booked":
-            raise ApiError("already_cancelled", "This appointment is cancelled.", 409)
         now = self.clock()
-        self._check_notice(appointment, now)
-
         new_start = _combine(req.new_date, req.new_start_time)
-        self._check_slot(new_start, appointment.duration_minutes, now, ignore_id=appointment.id)
-
         fingerprint = confirmations.digest(
             "reschedule",
             {"appointment": appointment.id, "starts_at": new_start.isoformat(timespec="minutes")},
         )
 
         if req.confirmation_token is None:
-            token = self._issue_token("reschedule", fingerprint)
+            self._require_booked(appointment)
+            self._check_notice(appointment, now)
+            self._check_slot(new_start, appointment.duration_minutes, now, appointment.id)
+            token = self._issue_token("reschedule", fingerprint, revision=appointment.revision)
             self._log("reschedule_appointment", "preview", f"appointment #{appointment.id}")
             return ChangeResult(
                 status="confirmation_required",
@@ -180,37 +200,55 @@ class AppointmentService:
                 confirmation_token=token,
             )
 
+        recorded = confirmations.stored_outcome(
+            self.repo.conn,
+            token=req.confirmation_token,
+            operation="reschedule",
+            details_digest=fingerprint,
+        )
+        if recorded is not None:
+            return self._replay(recorded)
+        self._check_notice(appointment, now)
+
         with self.repo.write_transaction():
-            confirmations.consume(
+            current = self._reload(appointment.id)
+            replay = confirmations.consume(
                 self.repo.conn,
                 token=req.confirmation_token,
                 operation="reschedule",
                 details_digest=fingerprint,
+                current_revision=current.revision,
                 now=now,
             )
-            self._check_slot(new_start, appointment.duration_minutes, now, ignore_id=appointment.id)
-            self.repo.move(appointment.id, new_start, now)
-        updated = self.repo.get_by_code(appointment.confirmation_code)
-        assert updated is not None  # the row was just updated inside this request
+            if replay is not None:
+                return self._replay(replay)
+            self._require_booked(current)
+            self._check_slot(new_start, current.duration_minutes, now, current.id)
+            self.repo.move(current.id, new_start, now)
+            updated = self._reload(current.id)
+            result = ChangeResult(
+                status="rescheduled",
+                summary=f"Rescheduled to {rules.describe(updated.starts_at)}.",
+                confirmation_code=updated.confirmation_code,
+                appointment=_out(updated),
+            )
+            confirmations.record_outcome(
+                self.repo.conn,
+                token=req.confirmation_token,
+                outcome=_outcome(result, updated),
+            )
         self._log("reschedule_appointment", "rescheduled", f"appointment #{appointment.id}")
-        return ChangeResult(
-            status="rescheduled",
-            summary=f"Rescheduled to {rules.describe(updated.starts_at)}.",
-            confirmation_code=updated.confirmation_code,
-            appointment=_out(updated),
-        )
+        return result
 
     def cancel(self, req: CancelRequest) -> ChangeResult:
         appointment = self._find(req.confirmation_code, req.patient_name)
-        if appointment.status != "booked":
-            raise ApiError("already_cancelled", "This appointment is already cancelled.", 409)
         now = self.clock()
-        self._check_notice(appointment, now)
-
         fingerprint = confirmations.digest("cancel", {"appointment": appointment.id})
 
         if req.confirmation_token is None:
-            token = self._issue_token("cancel", fingerprint)
+            self._require_booked(appointment)
+            self._check_notice(appointment, now)
+            token = self._issue_token("cancel", fingerprint, revision=appointment.revision)
             self._log("cancel_appointment", "preview", f"appointment #{appointment.id}")
             return ChangeResult(
                 status="confirmation_required",
@@ -222,31 +260,81 @@ class AppointmentService:
                 confirmation_token=token,
             )
 
+        recorded = confirmations.stored_outcome(
+            self.repo.conn,
+            token=req.confirmation_token,
+            operation="cancel",
+            details_digest=fingerprint,
+        )
+        if recorded is not None:
+            return self._replay(recorded)
+        self._check_notice(appointment, now)
+
         with self.repo.write_transaction():
-            confirmations.consume(
+            current = self._reload(appointment.id)
+            replay = confirmations.consume(
                 self.repo.conn,
                 token=req.confirmation_token,
                 operation="cancel",
                 details_digest=fingerprint,
+                current_revision=current.revision,
                 now=now,
             )
-            self.repo.set_status(appointment.id, "cancelled", now)
+            if replay is not None:
+                return self._replay(replay)
+            self._require_booked(current)
+            self.repo.set_status(current.id, "cancelled", now)
+            updated = self._reload(current.id)
+            result = ChangeResult(
+                status="cancelled",
+                summary="Your appointment has been cancelled.",
+                confirmation_code=updated.confirmation_code,
+                appointment=_out(updated, status="cancelled"),
+            )
+            confirmations.record_outcome(
+                self.repo.conn,
+                token=req.confirmation_token,
+                outcome=_outcome(result, updated),
+            )
         self._log("cancel_appointment", "cancelled", f"appointment #{appointment.id}")
-        return ChangeResult(
-            status="cancelled",
-            summary="Your appointment has been cancelled.",
-            confirmation_code=appointment.confirmation_code,
-            appointment=_out(appointment, status="cancelled"),
-        )
+        return result
 
     # --- helpers ------------------------------------------------------------
 
-    def _issue_token(self, operation: str, fingerprint: str) -> str:
+    def _issue_token(self, operation: str, fingerprint: str, *, revision: int) -> str:
         return confirmations.issue(
             self.repo.conn,
             operation=operation,
             details_digest=fingerprint,
+            preview_revision=revision,
             now=self.clock(),
+        )
+
+    def _reload(self, appointment_id: int) -> Appointment:
+        current = self.repo.get_by_id(appointment_id)
+        if current is None:
+            raise ApiError("not_found", "No appointment matches those details.", 404)
+        return current
+
+    def _require_booked(self, appointment: Appointment) -> None:
+        if appointment.status != "booked":
+            raise ApiError("already_cancelled", "This appointment is already cancelled.", 409)
+
+    def _replay(self, recorded: dict[str, Any]) -> ChangeResult:
+        """Answer a retry with the outcome it already produced, if nothing has changed since."""
+        appointment = self.repo.get_by_id(int(recorded["appointment_id"]))
+        if appointment is None or appointment.revision != recorded["revision"]:
+            raise ApiError(
+                "outcome_superseded",
+                "This request already completed, and the booking has changed since. "
+                "Check the current booking.",
+                status_code=409,
+            )
+        return ChangeResult(
+            status=recorded["status"],
+            summary=recorded["summary"],
+            confirmation_code=recorded["confirmation_code"],
+            appointment=_out(appointment),
         )
 
     def _booked_intervals(
@@ -284,16 +372,15 @@ class AppointmentService:
 
     def _check_notice(self, appointment: Appointment, now: datetime) -> None:
         if appointment.starts_at - now < timedelta(hours=rules.CHANGE_NOTICE_HOURS):
-            # Changes inside the notice window go to a person, not to the caller.
-            log.record_escalation(self.repo.conn, reason="change_too_late", now=now)
-            self._log("change_appointment", "escalated", f"appointment #{appointment.id}")
-            raise ApiError(
-                "change_too_late",
-                f"Changes need {rules.CHANGE_NOTICE_HOURS} hours' notice, so this change "
-                "cannot be made here. This demo records the request for the clinic. "
-                "No staff member is notified.",
-                status_code=409,
+            # Changes inside the notice window are queued for the clinic, not made here.
+            escalation = escalate(
+                self.repo.conn,
+                reason="change_too_late",
+                channel=self.channel,
+                clock=self.clock,
+                appointment_id=appointment.id,
             )
+            raise ApiError("change_too_late", escalation.message, status_code=409)
 
     def _find(self, confirmation_code: str, patient_name: str) -> Appointment:
         appointment = self.repo.get_by_code(confirmation_code)
@@ -329,6 +416,17 @@ class AppointmentService:
             summary=summary,
             now=self.clock(),
         )
+
+
+def _outcome(result: ChangeResult, appointment: Appointment) -> dict[str, Any]:
+    """What a confirmed token did, recorded so a retry can be answered without writing."""
+    return {
+        "status": result.status,
+        "summary": result.summary,
+        "confirmation_code": result.confirmation_code,
+        "appointment_id": appointment.id,
+        "revision": appointment.revision,
+    }
 
 
 def _combine(day: date, start_time: str) -> datetime:

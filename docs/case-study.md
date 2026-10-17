@@ -26,13 +26,13 @@ This project builds that workflow for a fictional clinic. It is a portfolio demo
 - Business rules in plain Python, separate from HTTP.
 - A browser demo page with a text assistant, booking form, booking management, and an activity log.
 - Seven tool routes for a voice agent, protected by a shared secret.
-- 162 unit and API tests, and 31 scenario evaluations.
+- 213 unit and API tests, and 31 scenario evaluations.
 - A live check script that exercises the voice tools through a public URL.
 - CI that runs lint and tests.
 
 ## How it was checked
 
-- `pytest` runs 193 tests: 162 unit and API tests and 31 scenario evaluations. All pass on the last run.
+- `pytest` runs 244 tests: 213 unit and API tests and 31 scenario evaluations. All pass on the last run.
 - Connected to a real ElevenLabs agent, three of the first four voice calls failed to book. Each failure was traced through the server logs: an empty token, an error that did not say which field was wrong, and spoken-style times. After the fixes, a scripted check through the public URL passed 12 of 12. The details are in [live-testing.md](live-testing.md).
 - The evaluation scenarios cover success, unavailable slots, invalid input, ambiguous requests, escalation, and medical questions. The method and results are in [evals/README.md](../evals/README.md).
 - The demo page was loaded in a browser. The booking button ran with no console errors.

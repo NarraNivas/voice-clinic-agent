@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 
+from app.db import transaction
 from app.models.domain import Appointment
 
 ISO_MINUTES = "%Y-%m-%dT%H:%M"
@@ -17,14 +18,8 @@ class AppointmentRepository:
     @contextmanager
     def write_transaction(self) -> Iterator[None]:
         """BEGIN IMMEDIATE: the overlap check and insert cannot interleave with another writer."""
-        self.conn.execute("BEGIN IMMEDIATE")
-        try:
+        with transaction(self.conn):
             yield
-        except BaseException:
-            self.conn.execute("ROLLBACK")
-            raise
-        else:
-            self.conn.execute("COMMIT")
 
     def booked_on(self, day: date) -> list[Appointment]:
         start = datetime.combine(day, datetime.min.time())
@@ -42,6 +37,12 @@ class AppointmentRepository:
     def get_by_code(self, confirmation_code: str) -> Appointment | None:
         row = self.conn.execute(
             "SELECT * FROM appointments WHERE confirmation_code = ?", (confirmation_code,)
+        ).fetchone()
+        return _to_domain(row) if row else None
+
+    def get_by_id(self, appointment_id: int) -> Appointment | None:
+        row = self.conn.execute(
+            "SELECT * FROM appointments WHERE id = ?", (appointment_id,)
         ).fetchone()
         return _to_domain(row) if row else None
 
@@ -89,13 +90,15 @@ class AppointmentRepository:
 
     def move(self, appointment_id: int, starts_at: datetime, now: datetime) -> None:
         self.conn.execute(
-            "UPDATE appointments SET starts_at = ?, updated_at = ? WHERE id = ?",
+            "UPDATE appointments SET starts_at = ?, updated_at = ?, revision = revision + 1 "
+            "WHERE id = ?",
             (starts_at.strftime(ISO_MINUTES), now.isoformat(timespec="seconds"), appointment_id),
         )
 
     def set_status(self, appointment_id: int, status: str, now: datetime) -> None:
         self.conn.execute(
-            "UPDATE appointments SET status = ?, updated_at = ? WHERE id = ?",
+            "UPDATE appointments SET status = ?, updated_at = ?, revision = revision + 1 "
+            "WHERE id = ?",
             (status, now.isoformat(timespec="seconds"), appointment_id),
         )
 
@@ -110,4 +113,5 @@ def _to_domain(row: sqlite3.Row) -> Appointment:
         duration_minutes=row["duration_minutes"],
         status=row["status"],
         idempotency_key=row["idempotency_key"],
+        revision=row["revision"],
     )
