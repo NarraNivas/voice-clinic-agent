@@ -4,7 +4,7 @@ I built this to learn how a voice agent can book things without making things up
 
 The setup is a fictional dental clinic called Maple Street Dental. A caller talks to a voice agent, which I connected through ElevenLabs. The agent can answer questions, check open times, book, reschedule, and cancel. The part I cared about most is the part the agent doesn't control: a small FastAPI service that decides what is allowed to happen.
 
-![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/NarraNivas/voice-clinic-agent/actions/workflows/ci.yml/badge.svg)
 
 > Everything here is made up: the clinic, the names, the addresses, and the 555-01xx phone numbers. There is no real patient data, and nothing in this repo is medical advice.
 
@@ -52,7 +52,7 @@ Most of what I learned came from the live calls. The first few failed, and the l
 - **A stale screen after a change.** After a reschedule or cancel, the page kept showing the old state. It now re-reads the booking from the server.
 - **Escalation messages that promised too much.** Some of my messages said a team member had been told. Nothing sends a notification in this project. Every message now says the demo records the request and notifies no one.
 
-The full log, including the calls that failed, is in [`docs/LIVE_TESTING.md`](docs/LIVE_TESTING.md). I'd rather you read the mistakes than take my word for the result.
+The full log, including the calls that failed, is in [`docs/live-testing.md`](docs/live-testing.md). I'd rather you read the mistakes than take my word for the result.
 
 ## Running it
 
@@ -73,7 +73,7 @@ If you want the voice part, copy `.env.example` to `.env` and fill it in. The ap
 set -a; . ../.env; set +a
 ```
 
-Setup for ElevenLabs is in [`docs/ELEVENLABS_SETUP.md`](docs/ELEVENLABS_SETUP.md). The agent instructions I wrote are in [`docs/AGENT_INSTRUCTIONS.md`](docs/AGENT_INSTRUCTIONS.md).
+Setup for ElevenLabs is in [`docs/elevenlabs-setup.md`](docs/elevenlabs-setup.md). The agent instructions I wrote are in [`docs/agent-instructions.md`](docs/agent-instructions.md).
 
 ## Tests
 
@@ -92,7 +92,7 @@ There's one more check that isn't in pytest. [`scripts/live_check.py`](scripts/l
 
 - The demo page works. I drove it in a browser through booking, rescheduling, cancelling, the 24-hour refusal, and the lost-reply recovery.
 - The voice tools work through a tunnel from my laptop. One booking made by voice went through and was found afterwards in the browser. That was one call, not a series, so I wouldn't call it reliable yet.
-- The agent instructions in `docs/AGENT_INSTRUCTIONS.md` are written. I haven't re-checked that the agent I configured follows them exactly.
+- The agent instructions in `docs/agent-instructions.md` are written. I haven't re-checked that the agent I configured follows them exactly.
 - Escalations are recorded in the database. Nobody gets notified.
 
 ## What I'd still change
@@ -114,4 +114,4 @@ scripts/            live check against a public URL
 docs/               setup, agent instructions, live log, case study, recording guide
 ```
 
-If you're reading this to see how I think about the work, the most useful files are [`booking.py`](backend/app/services/booking.py), [`confirmations.py`](backend/app/services/confirmations.py), [`DECISIONS.md`](DECISIONS.md), and [`docs/LIVE_TESTING.md`](docs/LIVE_TESTING.md).
+If you're reading this to see how I think about the work, the most useful files are [`booking.py`](backend/app/services/booking.py), [`confirmations.py`](backend/app/services/confirmations.py), [`DECISIONS.md`](DECISIONS.md), and [`docs/live-testing.md`](docs/live-testing.md).

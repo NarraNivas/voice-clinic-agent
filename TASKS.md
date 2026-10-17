@@ -32,7 +32,7 @@
 ## Milestone E — ElevenLabs tool integration
 - [x] `/tools/*` routes with `X-Tool-Secret` validation
 - [x] Tests for missing and wrong secrets, and for the unconfigured state
-- [x] Setup guide: `docs/ELEVENLABS_SETUP.md` (manual steps, tool definitions, allowlist, spend cap)
+- [x] Setup guide: `docs/elevenlabs-setup.md` (manual steps, tool definitions, allowlist, spend cap)
 
 ## Milestone F — Evaluation scenarios
 - [x] `evals/scenarios.json` covering success, unavailable slots, invalid input, ambiguity, escalation, and medical questions
@@ -42,7 +42,7 @@
 ## Milestone G — Docs and CI
 - [x] `README.md` (setup, demo workflow, tests, cost notes, limitations)
 - [x] Architecture notes and a mermaid diagram
-- [x] `docs/CASE_STUDY.md` and `docs/DEMO_RECORDING.md`
+- [x] `docs/case-study.md` and `docs/demo-recording.md`
 - [x] `.env.example`, `.gitignore`
 - [x] `.github/workflows/ci.yml` (install, ruff, pytest)
 

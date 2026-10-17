@@ -389,7 +389,7 @@ function renderVoice(health) {
       "p",
       { class: "hint" },
       "To turn it on, set the agent ID in your environment file and restart the server. " +
-        "Setup steps are in docs/ELEVENLABS_SETUP.md.",
+        "Setup steps are in docs/elevenlabs-setup.md.",
     ),
   );
 }

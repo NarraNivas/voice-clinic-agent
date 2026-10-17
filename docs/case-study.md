@@ -33,7 +33,7 @@ This project builds that workflow for a fictional clinic. It is a portfolio demo
 ## How it was checked
 
 - `pytest` runs 193 tests: 162 unit and API tests and 31 scenario evaluations. All pass on the last run.
-- Connected to a real ElevenLabs agent, three of the first four voice calls failed to book. Each failure was traced through the server logs: an empty token, an error that did not say which field was wrong, and spoken-style times. After the fixes, a scripted check through the public URL passed 12 of 12. The details are in [LIVE_TESTING.md](LIVE_TESTING.md).
+- Connected to a real ElevenLabs agent, three of the first four voice calls failed to book. Each failure was traced through the server logs: an empty token, an error that did not say which field was wrong, and spoken-style times. After the fixes, a scripted check through the public URL passed 12 of 12. The details are in [live-testing.md](live-testing.md).
 - The evaluation scenarios cover success, unavailable slots, invalid input, ambiguous requests, escalation, and medical questions. The method and results are in [evals/README.md](../evals/README.md).
 - The demo page was loaded in a browser. The booking button ran with no console errors.
 - These checks cover deterministic rules on fictional data. They do not measure how a live voice agent performs with real callers.

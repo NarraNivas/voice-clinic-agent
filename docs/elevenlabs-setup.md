@@ -33,7 +33,7 @@ Otherwise the server starts with the tools disabled and returns `503 tools_disab
 
 1. In the ElevenLabs dashboard, create a new agent (Conversational AI / ElevenAgents).
 2. Set the first message to say that this is an AI demo for a fictional clinic with invented data.
-3. Paste the system prompt from [docs/AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) (section 1). It covers the booking steps, intent changes, reading the confirmation code back, and the rules on what the agent may claim. The short version:
+3. Paste the system prompt from [docs/agent-instructions.md](agent-instructions.md) (section 1). It covers the booking steps, intent changes, reading the confirmation code back, and the rules on what the agent may claim. The short version:
    - Only offer booking, rescheduling, cancelling, FAQ answers, and escalation.
    - Never give medical advice. Escalate medical or emergency questions.
    - Read the booking summary back and get an explicit "yes". Then call `book-appointment` again with the same details and the `confirmation_token` from the preview response.
