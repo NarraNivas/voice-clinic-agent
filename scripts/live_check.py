@@ -99,7 +99,11 @@ def main() -> int:
     check("demo API is not exposed", status == 404, f"HTTP {status}")
 
     status, body = post(base, "/tools/answer-faq", faq, secret)
-    check("FAQ answers hours", status == 200 and body.get("topic") == "hours", f"HTTP {status}")
+    check(
+        "FAQ answers hours",
+        status == 200 and body.get("topic") == "hours",
+        f"HTTP {status}",
+    )
 
     day = next_tuesday()
     status, body = post(
@@ -109,7 +113,11 @@ def main() -> int:
         secret,
     )
     slots = body.get("slots", [])
-    check("availability returns real slots", status == 200 and bool(slots), f"{len(slots)} slots")
+    check(
+        "availability returns real slots",
+        status == 200 and bool(slots),
+        f"{len(slots)} slots",
+    )
     if not slots:
         return report(results)
     slot = slots[-1]
@@ -135,7 +143,10 @@ def main() -> int:
     )
 
     status, body = post(
-        base, "/tools/book-appointment", {**booking, "confirmation_token": token}, secret
+        base,
+        "/tools/book-appointment",
+        {**booking, "confirmation_token": token},
+        secret,
     )
     code = body.get("confirmation_code") or ""
     check(
@@ -145,7 +156,10 @@ def main() -> int:
     )
 
     status, body = post(
-        base, "/tools/book-appointment", {**booking, "confirmation_token": token}, secret
+        base,
+        "/tools/book-appointment",
+        {**booking, "confirmation_token": token},
+        secret,
     )
     check(
         "reusing the token does not book twice",
@@ -177,9 +191,16 @@ def main() -> int:
     )
 
     status, body = post(
-        base, "/tools/cancel-appointment", {**cancel, "confirmation_token": cancel_token}, secret
+        base,
+        "/tools/cancel-appointment",
+        {**cancel, "confirmation_token": cancel_token},
+        secret,
     )
-    check("cancel confirm", status == 200 and body.get("status") == "cancelled", f"HTTP {status}")
+    check(
+        "cancel confirm",
+        status == 200 and body.get("status") == "cancelled",
+        f"HTTP {status}",
+    )
 
     status, body = post(base, "/tools/escalate-to-human", {"reason": "medical"}, secret)
     check(

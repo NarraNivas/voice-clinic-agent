@@ -15,6 +15,7 @@ class Appointment:
     status: str
     idempotency_key: str | None
     revision: int = 0
+    provider_id: int = 1
 
     @property
     def ends_at(self) -> datetime:

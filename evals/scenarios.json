@@ -171,7 +171,8 @@
             "appointment_type": "cleaning",
             "date": "{tuesday}",
             "start_time": "10:00",
-            "caller_confirms": true
+            "caller_confirms": true,
+            "provider_id": 1
           },
           "expect_status": 200
         },
@@ -183,7 +184,8 @@
             "appointment_type": "cleaning",
             "date": "{tuesday}",
             "start_time": "10:00",
-            "caller_confirms": true
+            "caller_confirms": true,
+            "provider_id": 1
           },
           "expect_status": 409,
           "expect_error": "slot_unavailable"
@@ -203,7 +205,8 @@
             "appointment_type": "cleaning",
             "date": "{tuesday}",
             "start_time": "10:30",
-            "caller_confirms": true
+            "caller_confirms": true,
+            "provider_id": 1
           },
           "expect_status": 200
         },
@@ -215,7 +218,8 @@
             "appointment_type": "consultation",
             "date": "{tuesday}",
             "start_time": "10:00",
-            "caller_confirms": true
+            "caller_confirms": true,
+            "provider_id": 1
           },
           "expect_status": 409,
           "expect_error": "slot_unavailable"

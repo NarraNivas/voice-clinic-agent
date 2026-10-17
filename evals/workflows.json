@@ -1,0 +1,596 @@
+{
+  "version": 1,
+  "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+  "note": "Each case reproduces a failure class and checks the expected outcome. Cases are deterministic contract checks, not a benchmark of the live voice agent.",
+  "workflows": [
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "03:30"
+          },
+          "expect_status": 422,
+          "expect_error": "clinic_closed"
+        }
+      ],
+      "id": "wf-canonical-0330-stays-closed",
+      "category": "time",
+      "description": "03:30 is a 24-hour time. It must not become 15:30."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "not 3:30, make it 4:00 PM"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ],
+      "id": "wf-correction-is-not-applied",
+      "category": "time",
+      "description": "A self-correction must not be silently resolved."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "three thirty five"
+          },
+          "expect_status": 422,
+          "expect_error": "invalid_request"
+        }
+      ],
+      "id": "wf-two-times-are-ambiguous",
+      "category": "time",
+      "description": "'three thirty five' is ambiguous and must be rejected."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "3:30 PM"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required"
+          }
+        }
+      ],
+      "id": "wf-spoken-time-accepted",
+      "category": "time",
+      "description": "'3:30 PM' is read as 15:30 and previewed."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "confirmation_token": ""
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required"
+          }
+        }
+      ],
+      "id": "wf-blank-token-previews",
+      "category": "robustness",
+      "description": "A blank confirmation_token from a voice agent is treated as absent."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "Check Up",
+            "date": "{tuesday}",
+            "start_time": "10:00"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "confirmation_required"
+          }
+        }
+      ],
+      "id": "wf-check-up-alias",
+      "category": "robustness",
+      "description": "'Check Up' is accepted as checkup."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          },
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller"
+          },
+          "expect_status": 200,
+          "save": {
+            "stale": "confirmation_token"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/reschedule",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller",
+            "new_date": "{tuesday}",
+            "new_start_time": "14:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "rescheduled"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller",
+            "confirmation_token": "{stale}"
+          },
+          "expect_status": 409,
+          "expect_error": "invalid_confirmation"
+        }
+      ],
+      "id": "wf-stale-cancel-after-reschedule",
+      "category": "revision",
+      "description": "A cancel preview taken before a reschedule must not cancel the moved booking."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00"
+          },
+          "expect_status": 200,
+          "save": {
+            "token": "confirmation_token"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          },
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked",
+            "confirmation_code": "{code}"
+          }
+        }
+      ],
+      "id": "wf-lost-confirm-reply-is-recovered",
+      "category": "retry",
+      "description": "The confirm reply is lost. Sending the same token again returns the same booking."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller"
+          },
+          "expect_status": 200,
+          "save": {
+            "token": "confirmation_token"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "cancelled"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller",
+            "confirmation_token": "{token}"
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "cancelled"
+          }
+        }
+      ],
+      "id": "wf-lost-cancel-reply-is-recovered",
+      "category": "retry",
+      "description": "A cancel whose reply was lost is answered with the recorded cancellation."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "idempotency_key": "wf-key-00000001",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/cancel",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Workflow Caller",
+            "caller_confirms": true
+          },
+          "expect_status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "idempotency_key": "wf-key-00000001"
+          },
+          "expect_status": 409,
+          "expect_error": "idempotency_used"
+        }
+      ],
+      "id": "wf-cancelled-key-is-not-success",
+      "category": "idempotency",
+      "description": "Reusing a key for a cancelled booking must not report success."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "provider_id": 1,
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Second Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          }
+        }
+      ],
+      "id": "wf-second-provider-takes-same-time",
+      "category": "providers",
+      "description": "With one provider busy, an open-provider request is booked with the other."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "provider_id": 1,
+            "caller_confirms": true
+          },
+          "expect_status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Second Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "provider_id": 1
+          },
+          "expect_status": 409,
+          "expect_error": "slot_unavailable"
+        }
+      ],
+      "id": "wf-named-provider-busy-is-refused",
+      "category": "providers",
+      "description": "A named provider who is busy cannot take the same time."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/availability",
+          "body": {
+            "date": "{tuesday}",
+            "appointment_type": "checkup",
+            "provider_id": 99
+          },
+          "expect_status": 422,
+          "expect_error": "unknown_provider"
+        }
+      ],
+      "id": "wf-unknown-provider-refused",
+      "category": "providers",
+      "description": "A provider id that does not exist is refused."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Brand New Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "expect": {
+            "status": "booked"
+          }
+        }
+      ],
+      "id": "wf-new-caller-books",
+      "category": "customers",
+      "description": "A caller who is not in the customer table can still book."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "caller_confirms": true
+          },
+          "expect_status": 200,
+          "save": {
+            "code": "confirmation_code"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/appointments/lookup",
+          "body": {
+            "confirmation_code": "{code}",
+            "patient_name": "Someone Else"
+          },
+          "expect_status": 404,
+          "expect_error": "not_found"
+        }
+      ],
+      "id": "wf-code-alone-is-not-enough",
+      "category": "security",
+      "description": "A confirmation code without the matching name finds nothing."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "api",
+      "steps": [
+        {
+          "method": "POST",
+          "path": "/api/appointments",
+          "body": {
+            "patient_name": "Workflow Caller",
+            "appointment_type": "checkup",
+            "date": "{tuesday}",
+            "start_time": "10:00",
+            "confirmation_token": "forged-token-0123456789abcdef"
+          },
+          "expect_status": 409,
+          "expect_error": "invalid_confirmation"
+        }
+      ],
+      "id": "wf-forged-token-refused",
+      "category": "security",
+      "description": "A token that was never issued is refused."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "message",
+      "message": "Should I take ibuprofen for this tooth pain?",
+      "expect_route": "escalate_medical",
+      "expect_reply_contains": "queued",
+      "id": "wf-medical-is-not-answered",
+      "category": "medical",
+      "description": "A medication question is recorded as queued, not answered."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "message",
+      "message": "I have chest pain right now",
+      "expect_route": "escalate_emergency",
+      "expect_reply_contains": "911",
+      "id": "wf-emergency-points-to-911",
+      "category": "medical",
+      "description": "Emergency wording gets a 911 instruction first."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "message",
+      "message": "Let me speak to someone please",
+      "expect_route": "escalate_human",
+      "expect_reply_contains": "not delivered",
+      "id": "wf-queued-is-not-delivered",
+      "category": "handoff",
+      "description": "The caller is told the request is queued, not delivered."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "message",
+      "message": "What are your hours?",
+      "expect_route": "faq",
+      "expect_reply_contains": "Monday to Friday",
+      "id": "wf-faq-hours",
+      "category": "faq",
+      "description": "Clinic hours come from the clinic rules."
+    },
+    {
+      "label": "synthetic regression fixture: reconstructed from an observed failure class; not a recorded call",
+      "type": "message",
+      "message": "blah blah blah",
+      "expect_route": "clarify",
+      "id": "wf-ambiguous-is-clarified",
+      "category": "ambiguous",
+      "description": "Unclear chat text asks for a rephrase."
+    }
+  ]
+}

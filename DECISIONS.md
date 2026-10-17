@@ -72,3 +72,10 @@ Each entry records a choice, the alternatives, and the tradeoff.
 ## D18. Schema changes are versioned migrations
 - Migrations run in order and are recorded in `schema_migrations`. Before the first upgrade of an existing file, the file is copied to a `.before-vN.bak` sibling. Upgrades are additive, except for removing a free-text column from escalations, which the backup covers.
 
+
+## D19. Demo data is seeded through the real booking rules
+- The seed writes every booking through the same service the app uses, so the data obeys the same constraints. A fixed random seed and a fixed base date make the schedule reproducible.
+- The seed command refuses to overwrite a file it did not create, and the reset command only removes a file carrying the demo marker inside `data/demo/`. Your own database cannot be reset this way.
+
+## D20. The staff queue is local and unauthenticated
+- The queue is for the local demo only. It has no login, so it is served only by the demo app on localhost, never by the tools-only app. A real staff tool would need authentication before it held real requests.

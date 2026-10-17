@@ -84,7 +84,7 @@ cd backend
 .venv/bin/ruff format --check . ../scripts --config pyproject.toml
 ```
 
-Last run: 244 tests passed. 213 of them are unit and API tests, including the recovery journey over real localhost HTTP. The other 31 are scenarios in [`evals/scenarios.json`](evals/scenarios.json), which run realistic conversations against the real app. How I wrote them is in [`evals/README.md`](evals/README.md).
+Last run: 294 tests passed. 242 are unit and API tests, 31 are scenarios in [`evals/scenarios.json`](evals/scenarios.json), and 21 are curated workflow fixtures in [`evals/workflows.json`](evals/workflows.json). The workflow fixtures are synthetic regression cases built from failures seen in live testing. They are deterministic contract checks, not a benchmark of the voice agent. How the scenarios are written is in [`evals/README.md`](evals/README.md).
 
 There's one more check that isn't in pytest. [`scripts/live_check.py`](scripts/live_check.py) sends the same requests the agent sends, through a public URL, and then cleans up. It passed 12 of 12 on the last run. It only works while the tunnel is up.
 
@@ -98,6 +98,40 @@ cd backend
 ```
 
 It books an appointment, asks for a late cancellation, and gets it queued for the clinic. It makes the sandbox fail twice, then lose one response after saving. The worker retries on a fake clock until the handoff is delivered once. It uses temporary databases and removes them afterwards, so your demo data is untouched.
+
+## Offline demo: seeded schedule and staff queue
+
+Everything in this part runs locally with no account, key, or internet connection.
+
+```bash
+cd backend
+.venv/bin/python -m demo_data.seed     # creates data/demo/clinic-demo.db with fictional data
+.venv/bin/python -m demo_data.reset    # rebuilds it; refuses any file it did not create
+```
+
+The seed is fixed, so the same command always produces the same schedule. It contains 30 invented customers (including close names such as Maria Lopez and Maria Lopes), two providers, 60 bookings with 8 cancellations, a fully booked morning, a provider closure, a late-cancellation attempt, and four staff requests in different states. Each one is a named fixture, and the tests check the fixtures against the database.
+
+To look at it, run the demo on the seeded file and open the staff queue:
+
+```bash
+cd backend
+CLINIC_DB_PATH=$(pwd)/data/demo/clinic-demo.db .venv/bin/uvicorn app.main:create_app --factory --port 8010
+# then open http://127.0.0.1:8010/staff.html
+```
+
+The staff queue shows each request's team status separately from its records-system status. A request can be delivered and still be open.
+
+![The staff queue](docs/images/staff-queue.png)
+
+## Browser checks and the report
+
+The browser checks were run with a browser tool against the seeded demo and the local CRM sandbox. They are recorded in [`docs/browser-journeys.md`](docs/browser-journeys.md). A repeatable browser script is not part of the test suite, because it would add a browser dependency to the project.
+
+```bash
+backend/.venv/bin/python scripts/generate_report.py   # runs the checks and writes docs/reports/latest.md
+```
+
+The report is written from the commands that actually ran. It shows each exit code and the counts from that run. It does not copy numbers from earlier reports.
 
 ## Where it stands
 

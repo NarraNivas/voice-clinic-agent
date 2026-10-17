@@ -50,7 +50,7 @@ def availability(
     req: schemas.AvailabilityRequest,
     service: AppointmentService = Depends(get_demo_service),
 ) -> schemas.AvailabilityResponse:
-    return service.availability(req.date, req.appointment_type)
+    return service.availability(req.date, req.appointment_type, req.provider_id)
 
 
 @router.post("/appointments", response_model=schemas.ChangeResult)

@@ -16,8 +16,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.api.errors import register_error_handlers
+from app.api.middleware import add_request_logging
 from app.api.outbox import router as outbox_router
 from app.api.routes import router as api_router
+from app.api.staff import router as staff_router
 from app.api.tools import router as tools_router
 from app.config import Settings, load_settings
 from app.db import init_db
@@ -43,9 +45,11 @@ def create_app(
     app.state.settings = settings
     app.state.clock = clock or _clinic_clock(settings)
     register_error_handlers(app)
+    add_request_logging(app)
     app.include_router(api_router, prefix="/api")
     app.include_router(tools_router, prefix="/tools")
     app.include_router(outbox_router, prefix="/api")
+    app.include_router(staff_router, prefix="/api")
 
     if settings.frontend_dir.is_dir():
         app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")

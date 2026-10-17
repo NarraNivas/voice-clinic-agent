@@ -58,7 +58,7 @@ def check_availability(
     req: schemas.AvailabilityRequest,
     service: AppointmentService = Depends(get_tool_service),
 ) -> schemas.AvailabilityResponse:
-    return service.availability(req.date, req.appointment_type)
+    return service.availability(req.date, req.appointment_type, req.provider_id)
 
 
 @router.post(

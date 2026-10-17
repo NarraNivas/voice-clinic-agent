@@ -677,3 +677,48 @@ button {
     padding-bottom: 140px;
   }
 }
+
+/* --- staff queue --------------------------------------------------------- */
+
+.queue {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.queue th,
+.queue td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.queue th {
+  font: 500 12px/1.2 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.queue .chip + .chip {
+  margin-left: 6px;
+}
+
+@media (max-width: 720px) {
+  .queue thead {
+    display: none;
+  }
+
+  .queue tr {
+    display: grid;
+    gap: 4px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .queue td {
+    border: 0;
+    padding: 2px 0;
+  }
+}

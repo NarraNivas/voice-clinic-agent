@@ -75,3 +75,18 @@
 - [x] C3 worker: bounded retries, backoff on a fake clock, delivery states
 - [x] C4 fault injection: temporary 503 and a response lost after commit
 - [x] C5 acceptance journey runs end to end with one command, and recovery creates exactly one case
+
+## Milestone B: fictional data and a staff workflow
+- [x] Seeded schedule: 30 customers, 2 providers, 60 bookings, 8 cancellations, a full morning, a provider closure, a notice-window request, and 4 staff requests in different states
+- [x] Named fixtures, each checked by the tests
+- [x] Per-provider availability; the provider field is optional and defaults to any free provider
+- [x] Seed and reset commands; reset refuses any file that is not a marked demo database inside `data/demo/`
+- [x] Local staff queue page (`frontend/staff.html`)
+
+## Milestone D: evidence and documentation
+- [x] Curated workflow fixtures: 21 synthetic regression cases, including the two reproduced failures
+- [x] Browser journeys run against the seeded demo and the CRM sandbox (`docs/browser-journeys.md`)
+- [x] Report generated from actual command results (`scripts/generate_report.py`)
+- [x] Screenshot of the staff queue; no recording
+- [x] Request correlation IDs and timing in the logs, with no request bodies
+- [x] README updated with the offline demo, the browser checks, and the report

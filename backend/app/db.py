@@ -165,10 +165,53 @@ def _migrate_v3(conn: sqlite3.Connection) -> None:
     _run_script(conn, _V3_OUTBOX)
 
 
+# --- migration 4: providers, customers, closures, and staff request states -------------
+
+_V4_SCHEDULING = """
+CREATE TABLE IF NOT EXISTS providers (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    active INTEGER NOT NULL DEFAULT 1
+);
+INSERT OR IGNORE INTO providers (id, name) VALUES (1, 'Dr. Ada Lin'), (2, 'Dr. Sam Okafor');
+
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- A whole day when a provider does not take bookings.
+CREATE TABLE IF NOT EXISTS provider_closures (
+    provider_id INTEGER NOT NULL,
+    day TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    PRIMARY KEY (provider_id, day)
+);
+"""
+
+
+def _migrate_v4(conn: sqlite3.Connection) -> None:
+    _run_script(conn, _V4_SCHEDULING)
+    # Existing bookings belong to the first provider. Provider selection is optional on the
+    # tool contract, so older calls keep working unchanged.
+    _add_column(conn, "appointments", "provider_id INTEGER NOT NULL DEFAULT 1")
+    _add_column(conn, "appointments", "customer_id INTEGER")
+    _add_column(conn, "staff_requests", "status TEXT NOT NULL DEFAULT 'open'")
+    _add_column(conn, "staff_requests", "updated_at TEXT")
+    # The provider a preview chose is stored with its token, so a retry uses the same provider.
+    _add_column(conn, "pending_confirmations", "provider_id INTEGER")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_appointments_provider "
+        "ON appointments (provider_id, starts_at)"
+    )
+
+
 MIGRATIONS: list[tuple[int, str, Callable[[sqlite3.Connection], None]]] = [
     (1, "original tables", _migrate_v1),
     (2, "revisions, replayable outcomes, escalation cleanup", _migrate_v2),
     (3, "staff requests and CRM outbox", _migrate_v3),
+    (4, "providers, customers, closures, staff states", _migrate_v4),
 ]
 LATEST_VERSION = MIGRATIONS[-1][0]
 

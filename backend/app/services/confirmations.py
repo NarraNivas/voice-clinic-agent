@@ -52,13 +52,14 @@ def issue(
     details_digest: str,
     preview_revision: int,
     now: datetime,
+    provider_id: int | None = None,
 ) -> str:
     token = secrets.token_urlsafe(24)
     conn.execute(
         """
         INSERT INTO pending_confirmations
-            (token_hash, operation, details_digest, preview_revision, expires_at)
-        VALUES (?, ?, ?, ?, ?)
+            (token_hash, operation, details_digest, preview_revision, expires_at, provider_id)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             _hash_token(token),
@@ -66,9 +67,18 @@ def issue(
             details_digest,
             preview_revision,
             (now + TOKEN_TTL).isoformat(timespec="seconds"),
+            provider_id,
         ),
     )
     return token
+
+
+def preview_provider(conn: sqlite3.Connection, token: str) -> int | None:
+    """The provider the preview chose for this token, or None if the token is unknown."""
+    row = conn.execute(
+        "SELECT provider_id FROM pending_confirmations WHERE token_hash = ?", (_hash_token(token),)
+    ).fetchone()
+    return None if row is None or row["provider_id"] is None else int(row["provider_id"])
 
 
 def _row(conn: sqlite3.Connection, token: str, operation: str, details_digest: str) -> sqlite3.Row:

@@ -75,6 +75,11 @@ DateIn = Annotated[
 class AvailabilityRequest(BaseModel):
     date: DateIn
     appointment_type: AppointmentTypeIn
+    provider_id: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional. Omit to offer or book with any free provider.",
+    )
 
 
 class AvailabilityResponse(BaseModel):
@@ -91,6 +96,11 @@ class BookingRequest(BaseModel):
     date: DateIn
     start_time: TimeOfDay
     idempotency_key: OptionalKey = None
+    provider_id: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional. Omit to offer or book with any free provider.",
+    )
     confirmation_token: OptionalToken = None
 
 
@@ -103,6 +113,11 @@ class VoiceBookingRequest(BaseModel):
     date: DateIn
     start_time: TimeOfDay
     confirmation_token: OptionalToken = None
+    provider_id: int | None = Field(
+        default=None,
+        ge=1,
+        description="Optional. Omit to offer or book with any free provider.",
+    )
 
 
 class RescheduleRequest(BaseModel):

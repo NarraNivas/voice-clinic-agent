@@ -56,9 +56,15 @@ class AppointmentService:
 
     # --- availability -------------------------------------------------------
 
-    def availability(self, day: date, appointment_type: AppointmentType) -> AvailabilityResponse:
+    def availability(
+        self,
+        day: date,
+        appointment_type: AppointmentType,
+        provider_id: int | None = None,
+    ) -> AvailabilityResponse:
         now = self.clock()
         duration = rules.APPOINTMENT_DURATIONS[appointment_type]
+        provider_ids = self._providers_for(provider_id)
         if day < now.date():
             slots: list[str] = []
             message = "That date has already passed. Pick today or a later date."
@@ -66,7 +72,16 @@ class AppointmentService:
             slots = []
             message = f"Bookings open up to {rules.BOOKING_WINDOW_DAYS} days ahead, from today."
         else:
-            slots = rules.open_slots(day, duration, self._booked_intervals(day), now)
+            slots = sorted(
+                {
+                    slot
+                    for pid in provider_ids
+                    if not self.repo.is_closed(pid, day)
+                    for slot in rules.open_slots(
+                        day, duration, self._booked_intervals(day, pid), now
+                    )
+                }
+            )
             message = (
                 f"{len(slots)} open slot(s) found."
                 if slots
@@ -106,17 +121,25 @@ class AppointmentService:
         duration = rules.APPOINTMENT_DURATIONS[req.appointment_type]
         starts_at = _combine(req.date, req.start_time)
         now = self.clock()
+        if req.confirmation_token is not None and req.provider_id is None:
+            # A retry must use the provider the preview chose, even if that provider is now busy.
+            provider_id = confirmations.preview_provider(self.repo.conn, req.confirmation_token)
+            if provider_id is None:
+                provider_id = self._resolve_provider(None, starts_at, duration, now)
+        else:
+            provider_id = self._resolve_provider(req.provider_id, starts_at, duration, now)
         details = {
             "name": _normalize(req.patient_name),
             "type": req.appointment_type,
             "starts_at": starts_at.isoformat(timespec="minutes"),
             "key": req.idempotency_key or "",
+            "provider": provider_id,
         }
         fingerprint = confirmations.digest("book", details)
 
         if req.confirmation_token is None:
-            self._check_slot(starts_at, duration, now, ignore_id=None)
-            token = self._issue_token("book", fingerprint, revision=0)
+            self._check_slot(starts_at, duration, now, None, provider_id)
+            token = self._issue_token("book", fingerprint, revision=0, provider_id=provider_id)
             self._log("book_appointment", "preview", f"{req.appointment_type} preview")
             return ChangeResult(
                 status="confirmation_required",
@@ -148,7 +171,7 @@ class AppointmentService:
             if replay is not None:
                 return self._replay(replay)
             # Re-check inside the transaction: another request may have taken the slot.
-            self._check_slot(starts_at, duration, now, ignore_id=None)
+            self._check_slot(starts_at, duration, now, None, provider_id)
             appointment = self.repo.insert(
                 confirmation_code=self._new_code(),
                 patient_name=req.patient_name.strip(),
@@ -157,6 +180,7 @@ class AppointmentService:
                 duration_minutes=duration,
                 idempotency_key=req.idempotency_key,
                 now=now,
+                provider_id=provider_id,
             )
             result = self._booked_result(appointment, already_done=False)
             confirmations.record_outcome(
@@ -186,7 +210,13 @@ class AppointmentService:
         if req.confirmation_token is None:
             self._require_booked(appointment)
             self._check_notice(appointment, now)
-            self._check_slot(new_start, appointment.duration_minutes, now, appointment.id)
+            self._check_slot(
+                new_start,
+                appointment.duration_minutes,
+                now,
+                appointment.id,
+                appointment.provider_id,
+            )
             token = self._issue_token("reschedule", fingerprint, revision=appointment.revision)
             self._log("reschedule_appointment", "preview", f"appointment #{appointment.id}")
             return ChangeResult(
@@ -223,7 +253,9 @@ class AppointmentService:
             if replay is not None:
                 return self._replay(replay)
             self._require_booked(current)
-            self._check_slot(new_start, current.duration_minutes, now, current.id)
+            self._check_slot(
+                new_start, current.duration_minutes, now, current.id, current.provider_id
+            )
             self.repo.move(current.id, new_start, now)
             updated = self._reload(current.id)
             result = ChangeResult(
@@ -301,13 +333,16 @@ class AppointmentService:
 
     # --- helpers ------------------------------------------------------------
 
-    def _issue_token(self, operation: str, fingerprint: str, *, revision: int) -> str:
+    def _issue_token(
+        self, operation: str, fingerprint: str, *, revision: int, provider_id: int | None = None
+    ) -> str:
         return confirmations.issue(
             self.repo.conn,
             operation=operation,
             details_digest=fingerprint,
             preview_revision=revision,
             now=self.clock(),
+            provider_id=provider_id,
         )
 
     def _reload(self, appointment_id: int) -> Appointment:
@@ -338,12 +373,46 @@ class AppointmentService:
         )
 
     def _booked_intervals(
-        self, day: date, ignore_id: int | None = None
+        self, day: date, provider_id: int, ignore_id: int | None = None
     ) -> list[tuple[datetime, datetime]]:
-        return [(a.starts_at, a.ends_at) for a in self.repo.booked_on(day) if a.id != ignore_id]
+        return [
+            (a.starts_at, a.ends_at)
+            for a in self.repo.booked_on(day, provider_id)
+            if a.id != ignore_id
+        ]
+
+    def _providers_for(self, provider_id: int | None) -> list[int]:
+        if provider_id is None:
+            return self.repo.provider_ids()
+        if not self.repo.provider_exists(provider_id):
+            raise ApiError("unknown_provider", "That provider is not available.", 422)
+        return [provider_id]
+
+    def _resolve_provider(
+        self, requested: int | None, starts_at: datetime, duration: int, now: datetime
+    ) -> int:
+        """An explicit provider is honored as given. Otherwise the first provider who is free."""
+        if requested is not None:
+            self._providers_for(requested)
+            return requested
+        last_error: ApiError | None = None
+        for provider_id in self.repo.provider_ids():
+            try:
+                self._check_slot(starts_at, duration, now, None, provider_id)
+                return provider_id
+            except ApiError as error:
+                if error.code not in ("slot_unavailable", "provider_closed"):
+                    raise  # a problem with the time itself, not with one provider
+                last_error = error
+        raise last_error or ApiError("slot_unavailable", "That time is no longer available.", 409)
 
     def _check_slot(
-        self, starts_at: datetime, duration: int, now: datetime, ignore_id: int | None
+        self,
+        starts_at: datetime,
+        duration: int,
+        now: datetime,
+        ignore_id: int | None,
+        provider_id: int = 1,
     ) -> None:
         day = starts_at.date()
         if starts_at <= now:
@@ -367,7 +436,9 @@ class AppointmentService:
                 "invalid_time",
                 f"Start times must be on the {rules.SLOT_MINUTES}-minute grid.",
             )
-        if rules.overlaps(starts_at, ends_at, self._booked_intervals(day, ignore_id)):
+        if self.repo.is_closed(provider_id, day):
+            raise ApiError("provider_closed", "That provider is not taking bookings that day.", 409)
+        if rules.overlaps(starts_at, ends_at, self._booked_intervals(day, provider_id, ignore_id)):
             raise ApiError("slot_unavailable", "That time is no longer available.", 409)
 
     def _check_notice(self, appointment: Appointment, now: datetime) -> None:

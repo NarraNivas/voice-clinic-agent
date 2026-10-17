@@ -161,16 +161,24 @@ def test_token_expires_after_five_minutes(conn, service):
 
 
 def test_overlapping_booking_is_rejected(service):
-    book_confirmed(service)
-    expect_error("slot_unavailable", service.book, booking(patient_name="Someone Else"))
+    book_confirmed(service, provider_id=1)
+    expect_error(
+        "slot_unavailable", service.book, booking(patient_name="Someone Else", provider_id=1)
+    )
+
+
+def test_a_second_provider_can_take_the_same_time(service):
+    book_confirmed(service, provider_id=1)
+    other = book_confirmed(service, patient_name="Someone Else", provider_id=2)
+    assert other.status == "booked"
 
 
 def test_consultation_overlapping_a_cleaning_is_rejected(service):
-    book_confirmed(service, start_time="09:30")
+    book_confirmed(service, start_time="09:30", provider_id=1)
     expect_error(
         "slot_unavailable",
         service.book,
-        booking(appointment_type="consultation", start_time="09:00"),
+        booking(appointment_type="consultation", start_time="09:00", provider_id=1),
     )
 
 

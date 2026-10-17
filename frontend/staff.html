@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff queue · Maple Street Dental (Fictional Demo)</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%276%27 fill=%27%23111113%27/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css?v=4" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <p class="masthead-title">Staff queue</p>
+        <nav class="chapters-nav"><a href="/">Back to the demo</a></nav>
+      </header>
+      <section class="opening">
+        <p class="eyebrow">Local view · fictional data · no login</p>
+        <h1 class="display">Requests waiting for the team</h1>
+        <p class="dek">
+          Each request shows where it stands with the team, and separately whether the records system has accepted it.
+          The two are independent: a request can be delivered and still be open.
+        </p>
+      </section>
+      <section class="chapter" aria-labelledby="queue-title">
+        <h2 id="queue-title" class="sr-only">Requests</h2>
+        <div class="panel">
+          <p id="staff-status" class="hint" role="status"></p>
+          <table class="queue">
+            <thead>
+              <tr>
+                <th scope="col">Reason</th>
+                <th scope="col">Team status</th>
+                <th scope="col">Records system</th>
+                <th scope="col">Created</th>
+                <th scope="col">Change</th>
+              </tr>
+            </thead>
+            <tbody id="staff-rows"></tbody>
+          </table>
+        </div>
+      </section>
+      <footer class="colophon"><p>Local only. The records system is a simulator. No one is contacted from this page.</p></footer>
+    </div>
+    <script src="staff.js?v=4" type="module"></script>
+  </body>
+</html>
