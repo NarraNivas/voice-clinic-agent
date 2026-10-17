@@ -24,12 +24,13 @@ backend/data/*.db-journal
 # Browser tool output
 .playwright-mcp/
 
-# Environment files: only the placeholder template is shared
+# Environment files hold secrets. Never commit them.
+.env
 .env.*
-!.env.example
 *.bak
 *.bak-*
 
 # Local data and logs
 backend/data/
 *.log
+

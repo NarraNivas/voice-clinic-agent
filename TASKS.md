@@ -4,7 +4,7 @@
 - [x] Detect environment (macOS 26.3, Python 3.12.5, Node 22.22.1, Git 2.50.1, Docker not installed)
 - [x] Project docs: PROJECT_SPEC.md, DECISIONS.md, TASKS.md
 - [x] Pinned backend dependencies (`backend/requirements*.txt`)
-- [x] Config module and `.env.example`
+- [x] Config module
 - [x] SQLite schema and repository
 - [x] Pydantic request and response models
 
@@ -43,7 +43,7 @@
 - [x] `README.md` (setup, demo workflow, tests, cost notes, limitations)
 - [x] Architecture notes and a mermaid diagram
 - [x] `docs/case-study.md` and `docs/demo-recording.md`
-- [x] `.env.example`, `.gitignore`
+- [x] `.gitignore`
 - [x] `.github/workflows/ci.yml` (install, ruff, pytest)
 
 ## Milestone H — Final verification

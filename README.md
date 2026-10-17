@@ -67,7 +67,7 @@ uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000
 
 Then open <http://127.0.0.1:8000>. The page walks through a made-up caller named Ana: she asks about hours, books, changes her booking, and then sees the ledger of what happened.
 
-If you want the voice part, copy `.env.example` to `.env` and fill it in. The app doesn't read `.env` on its own, so load it into your shell first:
+If you want the voice part, create a file named `.env` in the project root with two values: `TOOL_SHARED_SECRET` (a long random string you generate yourself) and `ELEVENLABS_AGENT_ID` (your agent's public ID). The app doesn't read `.env` on its own, so load it into your shell first:
 
 ```bash
 set -a; . ../.env; set +a
