@@ -12,7 +12,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23111113'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=5" />
   </head>
   <body>
     <div class="page">
@@ -24,6 +24,7 @@
           <a href="#change">Change</a>
           <a href="#listen">Listen</a>
           <a href="#ledger">Ledger</a>
+          <a href="staff.html" class="staff-link">Staff queue</a>
         </nav>
       </header>
 
@@ -225,7 +226,8 @@
             <button type="button" id="refresh-log" class="pill secondary">Refresh ledger</button>
           </div>
           <div class="panel">
-            <ol id="log" class="ledger"></ol>
+            <ol id="log" class="ledger" aria-live="polite"></ol>
+            <button type="button" id="log-more" class="pill secondary" hidden>Show all</button>
           </div>
         </div>
       </article>
@@ -238,6 +240,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=3" type="module"></script>
+    <script src="app.js?v=5" type="module"></script>
   </body>
 </html>

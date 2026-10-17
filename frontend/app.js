@@ -394,32 +394,121 @@ function renderVoice(health) {
   );
 }
 
-async function loadLog() {
+// Ledger: readable labels, a compact time, and a short list that expands on request.
+const LEDGER_PREVIEW = 6;
+const TOOL_LABELS = {
+  check_availability: "Checked open times",
+  book_appointment: "Booking",
+  lookup_appointment: "Looked up a booking",
+  reschedule_appointment: "Rescheduled",
+  cancel_appointment: "Cancellation",
+  answer_faq: "FAQ answer",
+  escalate_to_human: "Handoff to the team",
+  change_appointment: "Change request",
+};
+const OUTCOME_LABELS = {
+  ok: "done",
+  preview: "previewed",
+  booked: "booked",
+  rescheduled: "rescheduled",
+  cancelled: "cancelled",
+  queued: "queued",
+  escalated: "queued",
+};
+const LEDGER_TIME = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+let ledgerItems = [];
+let ledgerExpanded = false;
+
+const REASON_LABELS = {
+  emergency: "Emergency wording",
+  medical: "Medical question",
+  human_request: "Asked for a person",
+  unsupported: "Outside the demo",
+  ambiguous: "Unclear request",
+  change_too_late: "Late change (24-hour rule)",
+};
+
+function ledgerDetail(summary) {
+  const reason = summary.split(" ")[0];
+  if (REASON_LABELS[reason]) return REASON_LABELS[reason];
+  return summary.replace(/appointment #(\d+)/g, "booking #$1").replace(/\s*\(#\d+\)/, "");
+}
+
+function renderLedger() {
   const list = $("log");
+  const button = $("log-more");
+  const visible = ledgerExpanded ? ledgerItems : ledgerItems.slice(0, LEDGER_PREVIEW);
+  if (ledgerItems.length === 0) {
+    list.replaceChildren(el("li", { class: "ledger-empty" }, "Nothing yet. Try a question or a booking."));
+    button.hidden = true;
+    return;
+  }
+  list.replaceChildren(
+    ...visible.map((item) => {
+      const when = new Date(item.created_at);
+      const label = TOOL_LABELS[item.tool_name] ?? item.tool_name;
+      const outcome = OUTCOME_LABELS[item.outcome] ?? item.outcome;
+      return el(
+        "li",
+        { class: "ledger-row" },
+        el("time", { class: "ledger-when", datetime: item.created_at }, LEDGER_TIME.format(when)),
+        el(
+          "div",
+          { class: "ledger-what" },
+          el("span", { class: "ledger-title" }, label),
+          el("span", { class: `ledger-outcome outcome-${item.outcome}` }, outcome),
+          el("span", { class: "ledger-detail" }, ledgerDetail(item.summary)),
+        ),
+      );
+    }),
+  );
+  button.hidden = ledgerItems.length <= LEDGER_PREVIEW;
+  button.textContent = ledgerExpanded ? "Show fewer" : `Show all ${ledgerItems.length}`;
+}
+
+async function loadLog() {
   try {
     const { items } = await api("/interactions");
-    list.replaceChildren(
-      ...items.map((item) =>
-        el(
-          "li",
-          {},
-          el("span", { class: "when" }, item.created_at.replace("T", " ")),
-          el(
-            "span",
-            { class: "what" },
-            `${item.tool_name.replaceAll("_", " ")} · ${item.outcome}`,
-            el("br"),
-            el("span", { class: "muted" }, item.summary),
-          ),
-        ),
-      ),
-    );
-    if (items.length === 0) {
-      list.append(el("li", {}, el("span", { class: "muted" }, "Nothing yet. Try a question first.")));
-    }
+    ledgerItems = items;
+    renderLedger();
   } catch (error) {
-    list.replaceChildren(el("li", {}, el("span", { class: "muted" }, error.message)));
+    ledgerItems = [];
+    $("log").replaceChildren(el("li", { class: "ledger-empty" }, error.message));
+    $("log-more").hidden = true;
   }
+}
+
+// The chapter at the top of the reading position is highlighted in the sticky header.
+function trackChapters() {
+  const links = new Map(
+    [...document.querySelectorAll(".chapters-nav a")].map((a) => [a.getAttribute("href").slice(1), a]),
+  );
+  const chapters = [...document.querySelectorAll(".chapter[id]")];
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const line = window.innerHeight * 0.35;
+    let current = null;
+    for (const chapter of chapters) {
+      if (chapter.getBoundingClientRect().top <= line) current = chapter.id;
+    }
+    const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 4;
+    if (atBottom && chapters.length) current = chapters[chapters.length - 1].id;
+    for (const [id, link] of links) link.classList.toggle("active", id === current);
+  };
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    },
+    { passive: true },
+  );
+  update();
 }
 
 // Chapters fade in as they reach the reader. Without JavaScript they stay visible.
@@ -460,6 +549,11 @@ async function start() {
   $("reschedule-button").addEventListener("click", previewReschedule);
   $("cancel-button").addEventListener("click", previewCancel);
   $("refresh-log").addEventListener("click", loadLog);
+  $("log-more").addEventListener("click", () => {
+    ledgerExpanded = !ledgerExpanded;
+    renderLedger();
+  });
+  trackChapters();
 
   try {
     const [clinic, health] = await Promise.all([api("/clinic"), api("/health")]);

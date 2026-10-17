@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test report · Voice Clinic Agent</title>
+<style>
+:root {
+  --paper: #f5f3ee; --card: #fcfbf8; --ink: #111113; --soft: #5d5f66;
+  --rule: #d8d4c9; --ok: #2d6a4f; --bad: #a4462a; --bar: #a4462a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0d0d0f; --card: #16161a; --ink: #f3f1ea; --soft: #a3a5ad;
+    --rule: #2c2c33; --ok: #8fd3b0; --bad: #e08a6c; --bar: #e08a6c;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 960px; margin: 0 auto; padding: 40px 20px 64px; }
+h1 { font: 400 2.2rem/1.1 Georgia, "Times New Roman", serif; margin: 0 0 6px; }
+h2 {
+  font: 500 13px/1.3 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--soft); margin: 40px 0 12px;
+}
+.meta { color: var(--soft); font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 24px; }
+.tile { background: var(--card); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; }
+.tile b { display: block; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--soft); font-size: 14px; }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 14px; padding: 6px 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 11px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); font-weight: 500; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ok { color: var(--ok); font-weight: 600; }
+.bad { color: var(--bad); font-weight: 600; }
+ul.bars { list-style: none; padding: 0; margin: 0; }
+ul.bars li {
+  position: relative; display: flex; gap: 12px; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid var(--rule);
+}
+ul.bars .bar {
+  position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar);
+  opacity: .12; border-radius: 4px;
+}
+ul.bars code { position: relative; flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+ul.bars .secs { position: relative; font-variant-numeric: tabular-nums; color: var(--soft); font-size: 13px; }
+.panel { padding: 14px 18px; }
+footer { margin-top: 40px; color: var(--soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Test report</h1>
+<p class="meta">Generated {{STAMP}} from revision <code>{{REVISION}}</code>. Every number on this page comes from the run that produced it.</p>
+<div class="tiles">{{TILES}}</div>
+<h2>Checks</h2>
+<div class="card"><table><thead><tr><th>Check</th><th>Result</th><th>Output</th></tr></thead><tbody>{{CHECKS}}</tbody></table></div>
+<h2>Tests by category</h2>
+<div class="card"><table><thead><tr><th>Category</th><th class="num">Passed / total</th></tr></thead><tbody>{{CATEGORIES}}</tbody></table></div>
+<h2>Slowest tests</h2>
+<div class="card"><ul class="bars">{{SLOWEST}}</ul></div>
+<h2>Failures</h2>
+<div class="card panel">{{FAILED}}</div>
+<footer>Scope: deterministic contract checks, the curated workflow fixtures in <code>evals/workflows.json</code> (synthetic regression cases), and the offline recovery journey. No live voice call and no speech or model quality is measured.</footer>
+</main>
+</body>
+</html>
