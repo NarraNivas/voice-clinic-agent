@@ -121,6 +121,10 @@ CLINIC_DB_PATH=$(pwd)/data/demo/clinic-demo.db .venv/bin/uvicorn app.main:create
 
 The staff queue shows each request's team status separately from its records-system status. A request can be delivered and still be open.
 
+The analytics page at `/dashboard.html` is a Tableau-style view of the same database. Filters for provider, appointment type, and date range narrow the booking charts, and clicking a type or provider filters the page. Filters are kept in the URL so a view can be shared. It reads only aggregates from `GET /api/analytics`, never names or caller text.
+
+![The analytics dashboard](docs/images/analytics-desktop.png)
+
 ![The staff queue](docs/images/staff-queue.png)
 
 ## Browser checks and the report

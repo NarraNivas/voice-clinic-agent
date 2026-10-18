@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinic analytics · Maple Street Dental (Fictional Demo)</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%276%27 fill=%27%23111113%27/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css?v=5" />
+    <link rel="stylesheet" href="dashboard.css?v=3" />
+  </head>
+  <body class="dash-body">
+    <div class="page dash-page">
+      <header class="masthead">
+        <p class="masthead-title">Clinic analytics</p>
+        <nav class="chapters-nav">
+          <a href="staff.html">Staff queue</a>
+          <a href="/">Back to the demo</a>
+        </nav>
+      </header>
+
+      <section class="dash-head">
+        <div>
+          <p class="eyebrow">Local view · fictional data · aggregates only</p>
+          <h1 class="display">Clinic operations</h1>
+          <p class="dek">
+            Filters narrow the booking sheets. Click a type or provider to filter on it.
+            Staff and handoff figures cover the whole queue.
+          </p>
+        </div>
+        <div class="dash-live">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="dash-updated">Loading</span>
+        </div>
+      </section>
+
+      <section class="filterbar" aria-label="Filters">
+        <label class="field">
+          <span>Provider</span>
+          <select id="f-provider"><option value="">All providers</option></select>
+        </label>
+        <label class="field">
+          <span>Appointment type</span>
+          <select id="f-type">
+            <option value="">All types</option>
+            <option value="checkup">Checkup</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="consultation">Consultation</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>From</span>
+          <input id="f-from" type="date" />
+        </label>
+        <label class="field">
+          <span>To</span>
+          <input id="f-to" type="date" />
+        </label>
+        <button id="f-reset" class="chip" type="button">Reset</button>
+        <div class="active-filters" id="active-filters" aria-live="polite"></div>
+      </section>
+
+      <p id="dash-status" class="hint" role="status"></p>
+
+      <section class="kpi-row" aria-label="Summary">
+        <article class="kpi-tile"><p class="kpi-label">Booked</p><p class="kpi-value" id="k-booked">–</p></article>
+        <article class="kpi-tile"><p class="kpi-label">Cancelled</p><p class="kpi-value" id="k-cancelled">–</p></article>
+        <article class="kpi-tile"><p class="kpi-label">Cancel rate</p><p class="kpi-value" id="k-rate">–</p></article>
+        <article class="kpi-tile"><p class="kpi-label">Booked hours</p><p class="kpi-value" id="k-hours">–</p></article>
+        <article class="kpi-tile"><p class="kpi-label">Staff requests</p><p class="kpi-value" id="k-staff">–</p></article>
+        <article class="kpi-tile"><p class="kpi-label">Delivered to CRM</p><p class="kpi-value" id="k-delivered">–</p></article>
+      </section>
+
+      <section class="sheets">
+        <article class="sheet sheet-trend">
+          <header class="sheet-head">
+            <h2>Bookings by day</h2>
+            <p class="sheet-note">Booked against cancelled</p>
+          </header>
+          <div id="trend" class="sheet-body"></div>
+          <details class="data"><summary>View data</summary><div class="data-table" id="trend-data"></div></details>
+        </article>
+
+        <article class="sheet sheet-types">
+          <header class="sheet-head">
+            <h2>By appointment type</h2>
+            <p class="sheet-note">Click to filter</p>
+          </header>
+          <div id="types" class="sheet-body bars"></div>
+          <details class="data"><summary>View data</summary><div class="data-table" id="types-data"></div></details>
+        </article>
+
+        <article class="sheet sheet-heat">
+          <header class="sheet-head">
+            <h2>When patients book</h2>
+            <p class="sheet-note">Booked appointments by weekday and start hour</p>
+          </header>
+          <div id="heat" class="sheet-body"></div>
+        </article>
+
+        <article class="sheet sheet-providers">
+          <header class="sheet-head">
+            <h2>Provider load</h2>
+            <p class="sheet-note">Booked against cancelled. Click to filter</p>
+          </header>
+          <div id="providers" class="sheet-body bars"></div>
+          <details class="data"><summary>View data</summary><div class="data-table" id="providers-data"></div></details>
+        </article>
+
+        <article class="sheet sheet-reasons">
+          <header class="sheet-head">
+            <h2>Staff requests by reason</h2>
+            <p class="sheet-note">Whole queue, stacked by team status</p>
+          </header>
+          <div id="reasons" class="sheet-body bars"></div>
+          <div class="legend-row" id="reasons-legend"></div>
+        </article>
+
+        <article class="sheet sheet-handoff">
+          <header class="sheet-head">
+            <h2>CRM handoff</h2>
+            <p class="sheet-note">Delivery state, separate from team status</p>
+          </header>
+          <div class="sheet-body handoff">
+            <svg id="donut" viewBox="0 0 120 120" role="img" aria-label="Handoff share"></svg>
+            <ul class="legend-list" id="handoff-legend"></ul>
+          </div>
+        </article>
+      </section>
+
+      <div id="tip" class="tip" role="tooltip" hidden></div>
+
+      <footer class="colophon"><p>Local only. Every figure is a count or a sum over the fictional demo database. No names are sent to this page.</p></footer>
+    </div>
+    <script src="dashboard.js?v=2" type="module"></script>
+  </body>
+</html>

@@ -15,6 +15,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.api.analytics import router as analytics_router
 from app.api.errors import register_error_handlers
 from app.api.middleware import add_request_logging
 from app.api.outbox import router as outbox_router
@@ -50,6 +51,7 @@ def create_app(
     app.include_router(tools_router, prefix="/tools")
     app.include_router(outbox_router, prefix="/api")
     app.include_router(staff_router, prefix="/api")
+    app.include_router(analytics_router, prefix="/api")
 
     if settings.frontend_dir.is_dir():
         app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
