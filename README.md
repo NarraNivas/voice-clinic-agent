@@ -61,9 +61,11 @@ You don't need any accounts or keys to try the demo.
 ```bash
 cd backend
 python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements.lock   # exact versions, the same set CI uses
 uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
+
+`requirements.txt` and `requirements-dev.txt` hold the direct dependencies. `requirements.lock` pins everything that gets installed, so a fresh install matches what CI tests.
 
 Then open <http://127.0.0.1:8000>. The page walks through a made-up caller named Ana: she asks about hours, books, changes her booking, and then sees the ledger of what happened.
 

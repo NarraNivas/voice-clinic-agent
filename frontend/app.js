@@ -364,9 +364,12 @@ function renderVoice(health) {
   const area = $("voice-area");
   area.replaceChildren();
   if (health.elevenlabs_widget_configured) {
-    // The agent ID is public. The widget script loads from unpkg, as documented by ElevenLabs.
+    // The agent ID is public. The widget script is pinned to a released version and checked
+    // with a Subresource Integrity hash, so the browser refuses any other file at that URL.
     const script = el("script", {
-      src: "https://unpkg.com/@elevenlabs/convai-widget-embed",
+      src: "https://unpkg.com/@elevenlabs/convai-widget-embed@0.18.3",
+      integrity: "sha384-BpmvKCW/TFrpO8oObmUgZzUCIMHI00QbpGA4/jfXcfTosbgtuEUN1wYT7nNIsV3v",
+      crossorigin: "anonymous",
       async: "",
       type: "text/javascript",
     });

@@ -73,7 +73,7 @@ The tool flow is **preview, then confirm**. A request with no `confirmation_toke
 When `ELEVENLABS_AGENT_ID` is set in your environment and the server restarts, the demo page loads the widget from the ElevenLabs package. The page renders:
 
 ```html
-<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed@0.18.3" integrity="sha384-BpmvKCW/TFrpO8oObmUgZzUCIMHI00QbpGA4/jfXcfTosbgtuEUN1wYT7nNIsV3v" crossorigin="anonymous" async type="text/javascript"></script>
 <elevenlabs-convai agent-id="YOUR_AGENT_ID"></elevenlabs-convai>
 ```
 

@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.analytics import router as analytics_router
 from app.api.errors import register_error_handlers
-from app.api.middleware import add_request_logging
+from app.api.middleware import add_request_logging, add_same_origin_guard
 from app.api.outbox import router as outbox_router
 from app.api.routes import router as api_router
 from app.api.staff import router as staff_router
@@ -47,6 +47,7 @@ def create_app(
     app.state.clock = clock or _clinic_clock(settings)
     register_error_handlers(app)
     add_request_logging(app)
+    add_same_origin_guard(app)
     app.include_router(api_router, prefix="/api")
     app.include_router(tools_router, prefix="/tools")
     app.include_router(outbox_router, prefix="/api")
